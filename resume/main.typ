@@ -17,6 +17,8 @@
   )
 }
 
+#let data = yaml("data.yaml")
+
 = #title
 // 使い方の説明。
 // "私"と"アドレス"など日本語名の関数の引数を変更してください。
@@ -47,8 +49,8 @@
               #grid(
                 columns: (1.5cm,4cm,1fr),
                 [ふりがな],
-                [#align(center,"りれきしょ")],
-                [#align(start,"たろう")]
+                [#align(center,data.sei_yomi)],
+                [#align(start,data.mei_yomi)]
               )
             ]
           ),
@@ -73,10 +75,10 @@
                   columns: (1.5cm,4cm,1fr),
                   [氏 #h(0.6cm) 名],
                   [
-                    #pad(y: 0.4cm,align(center + horizon,text(nameFontSize,"履歴書")))
+                    #pad(y: 0.4cm,align(center + horizon,text(nameFontSize,data.sei)))
                   ],
                   [
-                    #pad(y: 0.4cm,align(start + horizon,text(nameFontSize,"太郎")))
+                    #pad(y: 0.4cm,align(start + horizon,text(nameFontSize,data.mei)))
                   ]
                 )
               )
@@ -96,7 +98,7 @@
                 grid(
                 columns: (1.5cm,1fr),
                 [生年月日],
-                  pad(y: 0.2cm,[#addSpace(text(inputFontSize,["平成xx年xx月xx日" 生 #h(0.6cm) (満 #h(0.5em) 99 才)]))])
+                  pad(y: 0.2cm,[#addSpace(text(inputFontSize,[#data.birth.wareki 生 #h(0.6cm) (満 #h(0.5em) #data.age 才)]))])
                 )
               )
             ]
@@ -114,7 +116,7 @@
               height: 4cm,
               width: 3cm,
               [
-                #image("image/testImage.png", width: 3cm, height: 4cm)
+                #image(data.photo, width: 3cm, height: 4cm)
               ]
             )
           )
@@ -136,7 +138,7 @@
                 #grid(
                   columns: (1.5cm,1fr),
                   [ふりがな],
-                  [#align(center,"とうきょうとすみだくおしあげ")]
+                  [#align(center,data.address1_yomi)]
                 )
               ]
             ),
@@ -152,7 +154,7 @@
               left: none,
               right: 1.5pt
             ),[
-            電話 #h(10pt) 123-4567-8901
+            電話 #h(10pt) #data.tel1
             ]
           )
         ]
@@ -169,8 +171,8 @@
               left: 1.5pt,
               right: 0.5pt
             ),[
-              [現住所 (〒 #text(tracking: 1pt,systemFontSize,"131-0045"))]
-              #pad(y: 0.2cm ,align(center,text(inputFontSize,"東京都墨田区押上１丁目１−２")))
+              [現住所 (〒 #text(tracking: 1pt,systemFontSize,data.zip1))]
+              #pad(y: 0.2cm ,align(center,text(inputFontSize,data.address1)))
             ]
           )
         ],
@@ -185,7 +187,7 @@
               right: 1.5pt
             ),[
               E-mail
-              #pad(y: 0.3cm ,align(center,"sample@example.com"))
+              #pad(y: 0.3cm ,align(center,data.email1))
             ]
           )
         ]
@@ -204,7 +206,7 @@
                 #grid(
                   columns: (1.5cm,1fr),
                   [ふりがな],
-                  [#align(center,"")]
+                  [#align(center,data.address2_yomi)]
                 )
               ]
             ),
@@ -220,7 +222,7 @@
               left: none,
               right: 1.5pt
             ),[
-            電話 #h(10pt)
+            電話 #h(10pt) #data.tel2
             ]
           )
         ]
@@ -238,7 +240,7 @@
               right: 0.5pt
             ),[
              [連絡先 (〒 #h(20pt) - #h(20pt))]
-              #pad(y: 0.2cm ,align(center,text(inputFontSize,"https://github.com/Nikudanngo/typst-ja-resume-template")))
+              #pad(y: 0.2cm ,align(center,text(inputFontSize,data.address2)))
             ]
           )
         ],
@@ -253,7 +255,7 @@
               right: 1.5pt
             ),[
               E-mail
-              #pad(y: 0.3cm ,align(center,""))
+              #pad(y: 0.3cm ,align(center,data.email2))
             ]
           )
         ]
@@ -271,163 +273,84 @@
         height: 12.6cm,
         width: 100%,
         [
-          #grid(
-            columns: (1.5cm,0.8cm,1fr),
-            [
-              #rect(
-                stroke: (
-                  bottom: none,
-                  top: none,
-                  left: none,
-                  right: 0.5pt
-                ),
-                height: 100%,
-                width: 100%,
-                [
-                  #align(center,[年])
-                ]
-              )
-            ],
-            [
-              #rect(
-                stroke: (
-                  bottom: none,
-                  top: none,
-                  left: none,
-                  right: 0.5pt
-                ),
-                height: 100%,
-                width: 100%,
-                [
-                  #align(center,[月])
-                ]
-              )
-            ],
-            [
-              #rect(
-                width: 100%,
-                height: 100%,
-                stroke: (
-                  bottom: none,
-                  top: none,
-                  left: none,
-                  right: none,
-                ),
-                align(center,[学歴・職歴(各別にまとめて書く)])
-              )
-            ]
-          )
-          #place(
-            start + top,
-            dy: 10pt,
-            [
-              #let n = 0
-              #while n < 14 {
-                [#pad(y: 0.26cm,line(stroke: 0.5pt, length: 100%))]
-                n = n + 1
-              }
-            ]
-          )
-          #place(
-            top + left,
-            dy: 0.9cm,
-            [
-              #set text(size: inputFontSize)
-              #grid(
-                columns: (1.5cm,0.8cm,1fr),
-                [
-                  #align(center,"")
-                ],
-                [
-                  #align(center,"")
-                ],
-                [
-                  #align(center,[学歴])
-                ]
-              )
-              #grid(
-                columns: (1.5cm,0.8cm,1fr),
-                [
-                  #align(center,"平成1")
-                ],
-                [
-                  #align(center,"10")
-                ],
-                [
-                  #align(start + horizon,[#h(5pt)"俺、爆誕"])
-                ]
-              )
-              #grid(
-                columns: (1.5cm,0.8cm,1fr),
-                [
-                  #align(center,"平成20")
-                ],
-                [
-                  #align(center,"3")
-                ],
-                [
-                  #align(start + horizon,[#h(5pt)"スクスク育つ"])
-                ]
-              )
-              #grid(
-                columns: (1.5cm,0.8cm,1fr),
-                [
-                  #align(center,"平成30")
-                ],
-                [
-                  #align(center,"4")
-                ],
-                [
-                  #align(start + horizon,[#h(5pt)"宇宙大学ツヨツヨ学部エンジニア学科 入学"])
-                ]
-              )
-              #grid(
-                columns: (1.5cm,0.8cm,1fr),
-                [
-                  #align(center,"令和1")
-                ],
-                [
-                  #align(center,"8")
-                ],
-                [
-                  #align(start + horizon,[#h(5pt)"大規模開発サークル設立 \u{2192} サークル崩壊"])
-                ]
-              )
-              #linebreak()
-              #grid(
-                columns: (1.5cm,0.8cm,1fr),
-                [
-                  #align(center,"")
-                ],
-                [
-                  #align(center,"")
-                ],
-                [
-                  #align(center,[職歴])
-                ]
-              )
-              #grid(
-                columns: (1.5cm,0.8cm,1fr),
-                [
-                  #align(center,"令和6")
-                ],
-                [
-                  #align(center,"4")
-                ],
-                [
-                  #align(start + horizon,[#h(5pt)"大手IT系メーカーベンチャー企業 就職"])
-                ]
-              )
-              #grid(
-                columns: (1.5cm,0.8cm,1fr),
-                [],
-                [],
-                [
-                  #align(end + horizon,[以上#h(2cm)])
-                ]
-              )
-            ]
-          )
+// You can also import those.
+#import table: cell, header
+
+#let box_height = 12.6pt
+#let A = (
+  (align(center + horizon)[#box(height: box_height)[]], align(center + horizon)[#box(height: box_height)[]], align(center+horizon)[#box(height: box_height)[#text(size:10pt)[学歴]]]),
+  (align(center + horizon)[#box(height: box_height)[]], align(center + horizon)[#box(height: box_height)[]], align(center + horizon)[#box(height: box_height)[]]),
+  (align(center + horizon)[#box(height: box_height)[]], align(center + horizon)[#box(height: box_height)[]], align(center + horizon)[#box(height: box_height)[]]),
+  (align(center + horizon)[#box(height: box_height)[]], align(center + horizon)[#box(height: box_height)[]], align(center + horizon)[#box(height: box_height)[]]),
+  (align(center + horizon)[#box(height: box_height)[]], align(center + horizon)[#box(height: box_height)[]], align(center + horizon)[#box(height: box_height)[]]),
+  (align(center + horizon)[#box(height: box_height)[]], align(center + horizon)[#box(height: box_height)[]], align(center + horizon)[#box(height: box_height)[]]),
+  (align(center + horizon)[#box(height: box_height)[]], align(center + horizon)[#box(height: box_height)[]], align(center + horizon)[#box(height: box_height)[]]),
+  (align(center + horizon)[#box(height: box_height)[]], align(center + horizon)[#box(height: box_height)[]], align(center + horizon)[#box(height: box_height)[]]),
+  (align(center + horizon)[#box(height: box_height)[]], align(center + horizon)[#box(height: box_height)[]], align(center + horizon)[#box(height: box_height)[]]),
+  (align(center + horizon)[#box(height: box_height)[]], align(center + horizon)[#box(height: box_height)[]], align(center + horizon)[#box(height: box_height)[]]),
+  (align(center + horizon)[#box(height: box_height)[]], align(center + horizon)[#box(height: box_height)[]], align(center + horizon)[#box(height: box_height)[]]),
+  (align(center + horizon)[#box(height: box_height)[]], align(center + horizon)[#box(height: box_height)[]], align(center + horizon)[#box(height: box_height)[]]),
+  (align(center + horizon)[#box(height: box_height)[]], align(center + horizon)[#box(height: box_height)[]], align(center + horizon)[#box(height: box_height)[]]),
+  (align(center + horizon)[#box(height: box_height)[]], align(center + horizon)[#box(height: box_height)[]], align(center + horizon)[#box(height: box_height)[]]),
+  (align(center + horizon)[#box(height: box_height)[]], align(center + horizon)[#box(height: box_height)[]], align(center + horizon)[#box(height: box_height)[]]),
+)
+
+#let education = data.education
+#let experience = data.experience
+#let row = 0
+
+#for (i, entry) in education.enumerate() {
+  row = row + 1
+  let year = entry.at(0)
+  let month = entry.at(1)
+  let desc = entry.at(2)
+
+  A.at(row) = (
+    align(center + horizon)[#box(height: box_height)[#year]],
+    align(center + horizon)[#box(height: box_height)[#month]],
+    align(left + horizon)[#box(height: box_height)[#desc]]
+  )
+}
+
+#(A.at(row + 1) = (
+  align(center + horizon)[#box(height: box_height)[]],
+  align(center + horizon)[#box(height: box_height)[]],
+  align(center + horizon)[#box(height: box_height)[#text(size:10pt)[職歴]]]
+))
+#(row = row + 1)
+
+#for (i, entry) in experience.enumerate() {
+  row = row + 1
+  let year = entry.at(0)
+  let month = entry.at(1)
+  let desc = entry.at(2)
+
+  A.at(row) = (
+    align(center + horizon)[#box(height: box_height)[#year]],
+    align(center + horizon)[#box(height: box_height)[#month]],
+    align(left + horizon)[#box(height: box_height)[#desc]]
+  )
+}
+#(A.at(row + 1) = (
+  align(center + horizon)[#box(height: box_height)[]],
+  align(center + horizon)[#box(height: box_height)[]],
+  align(right + horizon)[#box(height: box_height, width: 1fr)[#text(size:9pt)[以上]]#box(width:60pt)[]],
+))
+
+#table(
+  columns: (1.5cm, 0.8cm, 1fr),
+  stroke: .4pt,
+  table.header(
+    cell(inset:6pt,[#align(center)[*年*]]),
+    cell(inset:6pt,[#align(center)[*月*]]),
+    cell(inset:6pt,[#align(center)[*学歴・職歴*]])
+  ),
+  ..for row in A {(
+    ..for val in row {(
+      [#val],
+    )}
+  )}
+)
         ]
       ),
     ),
@@ -489,7 +412,7 @@
                 left: none,
                 right: none,
               ),
-              align(center,[学歴・職歴(各別にまとめて書く)])
+              align(center,[免許・資格])
             )
           ]
         )
@@ -504,95 +427,25 @@
             }
           ]
         )
-      ]
-    ),
-  ),
-  linebreak(),
-  stack(
-    box(
-      stroke: (
-        bottom: 1.5pt,
-        top: 1.5pt,
-        left: 1.5pt,
-        right: 1.5pt
-      ),
-      height: 6.6cm,
-      width: 100%,
-      [
-        #grid(
-          columns: (1.5cm,0.8cm,1fr),
-          [
-            #rect(
-              stroke: (
-                bottom: none,
-                top: none,
-                left: none,
-                right: 0.5pt
-              ),
-              height: 100%,
-              width: 100%,
-              [
-                #align(center,[年])
-              ]
-            )
-          ],
-          [
-            #rect(
-              stroke: (
-                bottom: none,
-                top: none,
-                left: none,
-                right: 0.5pt
-              ),
-              height: 100%,
-              width: 100%,
-              [
-                #align(center,[月])
-              ]
-            )
-          ],
-          [
-            #rect(
-              width: 100%,
-              height: 100%,
-              stroke: (
-                bottom: none,
-                top: none,
-                left: none,
-                right: none,
-              ),
-              align(center,[免許・資格])
-            )
-          ]
-        )
-        #place(
-          start + top,
-          dy: 10pt,
-          [
-            #let n = 0
-            #while n < 7 {
-              [#pad(y: 0.26cm,line(stroke: 0.5pt, length: 100%))]
-              n = n + 1
-            }
-          ]
-        )
         #place(
           top + left,
           dy: 0.9cm,
           [
             #set text(size: inputFontSize)
-            #grid(
-              columns: (1.5cm,0.8cm,1fr),
-              [
-                #align(center,"平成1")
-              ],
-              [
-                #align(center,"12")
-              ],
-              [
-                #align(start + horizon,[#h(5pt)"普通自動車免許 取得"])
-              ]
-            )
+            #for item in data.licences {
+              grid(
+                columns: (1.5cm,0.8cm,1fr),
+                [
+                  #align(center, [#item.at(0)])
+                ],
+                [
+                  #align(center, [#item.at(1)])
+                ],
+                [
+                  #align(start + horizon,[#h(5pt)#item.at(2)])
+                ]
+              )
+            }
           ]
         )
       ]
@@ -613,7 +466,7 @@
         志望の動機、特技、好きな学科、アピールポイントなど
         #linebreak()
         #set text(size: inputFontSize)
-    [私がこの職に応募する理由は、]
+        [#data.motive]
       ]
     )
   ),
@@ -632,7 +485,7 @@
         本人希望記入欄(特に給料・職種・勤務時間・勤務地・その他についての希望があれば記入)
         #linebreak()
         #set text(size: inputFontSize)
-    [私は〇〇がしたい]
+        [#data.wish]
       ]
     )
   ),
