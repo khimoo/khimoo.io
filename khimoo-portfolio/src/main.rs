@@ -73,12 +73,16 @@ fn app() -> Html {
             url: "https://youtu.be/PsaFVLr8t4E".to_string(),
         },
     ];
-    let selected_video = use_state(|| None);
+    let selected_video: UseStateHandle<Option<Video>> = use_state::<Option<Video>, _>(|| None); // _はFnOnce() -> Option<Video>
 
-    let on_video_select = {
-        let selected_video = selected_video.clone();
+    // Callbackの型を明示
+    let on_video_select: Callback<Video> = {
+        // selected_videoをクローン（UseStateHandleはClone実装あり）
+        let selected_video: UseStateHandle<Option<Video>> = selected_video.clone();
+
         Callback::from(move |video: Video| {
-            selected_video.set(Some(video))
+            // setメソッドで状態を更新
+            selected_video.set(Some(video));
         })
     };
 

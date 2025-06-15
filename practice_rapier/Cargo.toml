@@ -1,0 +1,7 @@
+[package]
+name = "practice_rapier"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+rapier2d = { version = "*", features = [ "simd-stable" ] }
