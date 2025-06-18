@@ -1,15 +1,17 @@
 use yew::prelude::*;
-use web_sys::HtmlDivElement;
+use web_sys::{HtmlDivElement, MouseEvent};
 use rapier2d::prelude::*;
 use std::rc::Rc;
 use std::cell::RefCell;
 
+// --- 構造体定義 (変更なし) ---
 #[derive(Clone, PartialEq)]
 struct Position {
     x: i32,
     y: i32,
 }
 
+// --- CoordinatesDisplay コンポーネント (変更なし) ---
 #[derive(Properties, PartialEq)]
 struct CoordinatesDisplayProps {
     position: Option<Position>,
@@ -41,6 +43,46 @@ fn coordinates_display(props: &CoordinatesDisplayProps) -> Html {
     }
 }
 
+#[derive(Properties, PartialEq)]
+struct SimulationContainerProps {
+    ball_positions: Vec<Position>,
+    on_mouse_down: Callback<MouseEvent>,
+    on_mouse_move: Callback<MouseEvent>,
+    on_mouse_up: Callback<MouseEvent>,
+    container_ref: NodeRef,
+}
+
+#[function_component(SimulationContainer)]
+fn simulation_container(props: &SimulationContainerProps) -> Html {
+    html! {
+        <div
+            ref={props.container_ref.clone()}
+            onmousedown={props.on_mouse_down.clone()}
+            onmousemove={props.on_mouse_move.clone()}
+            onmouseup={props.on_mouse_up.clone()}
+            style="min-height: 100vh; background-color: #f0f0f0; border: 2px solid #ccc; margin: 10px; position: relative;"
+        >
+            {
+                props.ball_positions.iter().enumerate().map(|(i, pos)| {
+                    html! {
+                        <div key={i} style={format!("
+                            position: absolute;
+                            width: 20px;
+                            height: 20px;
+                            background-color: black;
+                            border-radius: 50%;
+                            transform: translate(-50%, -50%);
+                            left: {}px;
+                            top: {}px;
+                        ", pos.x, pos.y)}></div>
+                    }
+                }).collect::<Html>()
+            }
+        </div>
+    }
+}
+
+// --- PhysicsWorld (変更なし) ---
 struct PhysicsWorld {
     rigid_body_set: RigidBodySet,
     collider_set: ColliderSet,
@@ -155,106 +197,31 @@ impl PhysicsWorld {
     }
 }
 
-#[function_component(App)]
-fn app() -> Html {
-    let mouse_position: UseStateHandle<Option<Position>> = use_state(|| None);
-    let ball_positions: UseStateHandle<Vec<Position>> = use_state(|| vec![]);
-    let is_dragging: UseStateHandle<bool> = use_state(|| false);
-    let container_ref = use_node_ref();
-    let container_bounds: UseStateHandle<Option<(i32, i32, i32, i32)>> = use_state(|| None);
+// --- ここからリファクタリング箇所 (カスタムフック) ---
+
+/// カスタムフックの戻り値をまとめるための構造体
+struct UsePhysicsAndDragHandle {
+    ball_positions: UseStateHandle<Vec<Position>>,
+    mouse_position: UseStateHandle<Option<Position>>,
+    on_mouse_down: Callback<MouseEvent>,
+    on_mouse_move: Callback<MouseEvent>,
+    on_mouse_up: Callback<MouseEvent>,
+}
+
+/// 物理演算とドラッグ操作に関するロジックをまとめたカスタムフック
+#[hook]
+fn use_physics_and_drag(container_ref: NodeRef) -> UsePhysicsAndDragHandle {
     let physics_world = use_state(|| {
         let mut world = PhysicsWorld::new();
-        world.add_ball(0.0, 10.0); // 初期位置でballを追加
-        world.set_active_ball(Some(0)); // 最初のballをアクティブに
+        world.add_ball(0.0, 10.0);
+        world.set_active_ball(Some(0));
         Rc::new(RefCell::new(world))
     });
+    let ball_positions = use_state(Vec::new);
+    let mouse_position = use_state(|| None);
+    let is_dragging = use_state(|| false);
 
-    // Update container bounds when ref is available
-    {
-        let container_ref = container_ref.clone();
-        let container_bounds = container_bounds.clone();
-        use_effect_with((), move |_| {
-            if let Some(container) = container_ref.cast::<HtmlDivElement>() {
-                let rect = container.get_bounding_client_rect();
-                container_bounds.set(Some((
-                    rect.left() as i32,
-                    rect.right() as i32,
-                    rect.top() as i32,
-                    rect.bottom() as i32,
-                )));
-            }
-            || ()
-        });
-    }
-
-    let update_positions = {
-        let mouse_position = mouse_position.clone();
-        let ball_positions = ball_positions.clone();
-        let container_ref = container_ref.clone();
-        let physics_world = physics_world.clone();
-        Callback::from(move |e: MouseEvent| {
-            if let Some(container) = container_ref.cast::<HtmlDivElement>() {
-                let rect = container.get_bounding_client_rect();
-                let x = e.client_x() - rect.left() as i32;
-                let y = e.client_y() - rect.top() as i32;
-
-                mouse_position.set(Some(Position {
-                    x: e.client_x(),
-                    y: e.client_y(),
-                }));
-
-                // Update active ball position
-                let mut world = physics_world.borrow_mut();
-                if let Some(active_index) = world.active_ball_index {
-                    let physics_x = (x as f32) / 100.0;
-                    let physics_y = (y as f32) / 100.0;
-                    world.set_ball_position(active_index, physics_x, physics_y);
-
-                    // Update ball positions state
-                    let mut positions = (*ball_positions).clone();
-                    if positions.len() <= active_index {
-                        positions.resize(active_index + 1, Position { x: 0, y: 0 });
-                    }
-                    positions[active_index] = Position { x, y };
-                    ball_positions.set(positions);
-                }
-            }
-        })
-    };
-
-    let on_mouse_down = {
-        let is_dragging = is_dragging.clone();
-        let update_positions = update_positions.clone();
-        let physics_world = physics_world.clone();
-        Callback::from(move |e: MouseEvent| {
-            is_dragging.set(true);
-            physics_world.borrow_mut().set_dragging(true);
-            update_positions.emit(e);
-        })
-    };
-
-    let on_mouse_up = {
-        let is_dragging = is_dragging.clone();
-        let mouse_position = mouse_position.clone();
-        let physics_world = physics_world.clone();
-        Callback::from(move |_| {
-            is_dragging.set(false);
-            physics_world.borrow_mut().set_dragging(false);
-            mouse_position.set(None);
-        })
-    };
-
-    let on_mouse_move = {
-        let is_dragging = is_dragging.clone();
-        let update_positions = update_positions.clone();
-        Callback::from(move |e: MouseEvent| {
-            if *is_dragging {
-                update_positions.emit(e);
-            }
-        })
-    };
-
-    // Physics update
+    // 物理エンジンのステップ実行
     {
         let physics_world = physics_world.clone();
         let ball_positions = ball_positions.clone();
@@ -269,46 +236,137 @@ fn app() -> Html {
                     ball_positions.set(ui_positions);
                 }
             });
+            // `handle` を `forget` して、コンポーネントが破棄されてもタイマーが止まらないようにする
             handle.forget();
             || ()
         });
     }
 
+    // マウスイベントのコールバック
+    let on_mouse_down = {
+        let is_dragging = is_dragging.clone();
+        let physics_world = physics_world.clone();
+        let mouse_position = mouse_position.clone();
+        let ball_positions = ball_positions.clone();
+        let container_ref = container_ref.clone();
+
+        Callback::from(move |e: MouseEvent| {
+            is_dragging.set(true);
+            physics_world.borrow_mut().set_dragging(true);
+
+            if let Some(container) = container_ref.cast::<HtmlDivElement>() {
+                let rect = container.get_bounding_client_rect();
+                let x = e.client_x() - rect.left() as i32;
+                let y = e.client_y() - rect.top() as i32;
+
+                mouse_position.set(Some(Position { x: e.client_x(), y: e.client_y() }));
+
+                let mut world = physics_world.borrow_mut();
+                if let Some(active_index) = world.active_ball_index {
+                    let physics_x = (x as f32) / 100.0;
+                    let physics_y = (y as f32) / 100.0;
+                    world.set_ball_position(active_index, physics_x, physics_y);
+
+                    let mut positions = (*ball_positions).clone();
+                    if positions.len() <= active_index {
+                        positions.resize(active_index + 1, Position { x: 0, y: 0 });
+                    }
+                    positions[active_index] = Position { x, y };
+                    ball_positions.set(positions);
+                }
+            }
+        })
+    };
+
+    let on_mouse_move = {
+        let is_dragging = is_dragging.clone();
+        // `on_mouse_down` と同じロジックを持つため、ダウンイベントのコールバックを再利用
+        let update_positions = on_mouse_down.clone();
+
+        Callback::from(move |e: MouseEvent| {
+            if *is_dragging {
+                update_positions.emit(e);
+            }
+        })
+    };
+
+    let on_mouse_up = {
+        let is_dragging = is_dragging.clone();
+        let physics_world = physics_world.clone();
+        let mouse_position = mouse_position.clone();
+
+        Callback::from(move |_| {
+            is_dragging.set(false);
+            physics_world.borrow_mut().set_dragging(false);
+            mouse_position.set(None);
+        })
+    };
+
+    UsePhysicsAndDragHandle {
+        ball_positions,
+        mouse_position,
+        on_mouse_down,
+        on_mouse_move,
+        on_mouse_up,
+    }
+}
+
+/// コンテナの境界を取得するカスタムフック
+#[hook]
+fn use_container_bounds(container_ref: NodeRef) -> UseStateHandle<Option<(i32, i32, i32, i32)>> {
+    let container_bounds = use_state(|| None);
+
+    {
+        let container_bounds = container_bounds.clone();
+        use_effect_with(container_ref, move |container_ref| {
+            if let Some(container) = container_ref.cast::<HtmlDivElement>() {
+                let rect = container.get_bounding_client_rect();
+                container_bounds.set(Some((
+                    rect.left() as i32,
+                    rect.right() as i32,
+                    rect.top() as i32,
+                    rect.bottom() as i32,
+                )));
+            }
+            || ()
+        });
+    }
+
+    container_bounds
+}
+
+/// メインのAppコンポーネント (リファクタリング後)
+#[function_component(App)]
+fn app() -> Html {
+    // 1. DOM要素への参照を作成
+    let container_ref = use_node_ref();
+
+    // 2. カスタムフックを呼び出して、ロジックと状態を取得
+    let container_bounds = use_container_bounds(container_ref.clone());
+    let physics_handle = use_physics_and_drag(container_ref.clone());
+
+    // 3. 取得した状態とコールバックをプレゼンテーションコンポーネントに渡す
     html! {
         <>
-            <h1>{"Mouse Coordinates"}</h1>
+            <h1>{"Yew & Rapier2D Physics Simulation"}</h1>
+
             <CoordinatesDisplay
-                position={(*mouse_position).clone()}
+                position={(*physics_handle.mouse_position).clone()}
                 container_bounds={(*container_bounds).clone()}
             />
-            <div
-                ref={container_ref.clone()}
-                onmousedown={on_mouse_down}
-                onmousemove={on_mouse_move}
-                onmouseup={on_mouse_up}
-                style="min-height: 100vh; background-color: #f0f0f0; border: 2px solid #ccc; margin: 10px; position: relative;"
-            >
-                {
-                    ball_positions.iter().enumerate().map(|(i, pos)| {
-                        html! {
-                            <div key={i} style={format!("
-                                position: absolute;
-                                width: 20px;
-                                height: 20px;
-                                background-color: black;
-                                border-radius: 50%;
-                                transform: translate(-50%, -50%);
-                                left: {}px;
-                                top: {}px;
-                            ", pos.x, pos.y)}></div>
-                        }
-                    }).collect::<Html>()
-                }
-            </div>
+
+            <SimulationContainer
+                ball_positions={(*physics_handle.ball_positions).clone()}
+                on_mouse_down={physics_handle.on_mouse_down}
+                on_mouse_move={physics_handle.on_mouse_move}
+                on_mouse_up={physics_handle.on_mouse_up}
+                container_ref={container_ref}
+            />
         </>
     }
 }
 
+// --- main (変更なし) ---
 fn main() {
     yew::Renderer::<App>::new().render();
 }
