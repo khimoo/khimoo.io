@@ -21,6 +21,63 @@ struct Ball {
     radius: f32,
 }
 
+// Velocity tracking for throwing
+#[derive(Clone)]
+struct VelocityTracker {
+    positions: Vec<(i32, i32, f64)>, // (x, y, timestamp)
+    max_samples: usize,
+}
+
+impl VelocityTracker {
+    fn new(max_samples: usize) -> Self {
+        Self {
+            positions: Vec::new(),
+            max_samples,
+        }
+    }
+
+    fn add_position(&mut self, x: i32, y: i32) {
+        let timestamp = web_sys::window()
+            .and_then(|w| w.performance())
+            .map(|p| p.now())
+            .unwrap_or(0.0);
+
+        self.positions.push((x, y, timestamp));
+
+        // Keep only the most recent samples
+        if self.positions.len() > self.max_samples {
+            self.positions.remove(0);
+        }
+    }
+
+    fn calculate_velocity(&self) -> Option<(f32, f32)> {
+        if self.positions.len() < 2 {
+            return None;
+        }
+
+        let (x1, y1, t1) = self.positions[0];
+        let (x2, y2, t2) = self.positions[self.positions.len() - 1];
+
+        let dt = (t2 - t1) / 1000.0; // Convert to seconds
+        if dt < 0.01 { // Minimum time threshold
+            return None;
+        }
+
+        let dx = (x2 - x1) as f32;
+        let dy = (y2 - y1) as f32;
+        let dt_f32 = dt as f32; // Convert to f32
+
+        let vx = dx / dt_f32;
+        let vy = dy / dt_f32;
+
+        Some((vx, vy))
+    }
+
+    fn clear(&mut self) {
+        self.positions.clear();
+    }
+}
+
 // Debug grid component
 #[derive(Properties, PartialEq)]
 struct DebugGridProps {
@@ -36,6 +93,7 @@ struct CoordinatesDisplayProps {
     container_bounds: Option<(i32, i32, i32, i32)>, // (min_x, max_x, min_y, max_y)
     balls: Vec<Ball>,
     show_debug_grid: bool,
+    current_velocity: Option<(f32, f32)>,
     on_toggle_debug_grid: Callback<MouseEvent>,
 }
 
@@ -48,6 +106,16 @@ fn coordinates_display(props: &CoordinatesDisplayProps) -> Html {
                 match &props.position {
                     Some(pos) => format!("X: {}, Y: {}", pos.x, pos.y),
                     None => "Click and drag to see coordinates".to_string(),
+                }
+            }</p>
+            <h3>{"Drag Velocity"}</h3>
+            <p>{
+                match &props.current_velocity {
+                    Some((vx, vy)) => {
+                        let speed = (vx * vx + vy * vy).sqrt();
+                        format!("Velocity: ({:.1}, {:.1}) px/s, Speed: {:.1} px/s", vx, vy, speed)
+                    },
+                    None => "Drag to see velocity".to_string(),
                 }
             }</p>
             <h3>{"Container Bounds"}</h3>
@@ -162,6 +230,7 @@ struct PhysicsWorld {
     active_ball_index: Option<usize>,
     is_dragging: bool,
     is_initialized: bool,
+    velocity_tracker: VelocityTracker,
 }
 
 impl PhysicsWorld {
@@ -184,6 +253,7 @@ impl PhysicsWorld {
             active_ball_index: None,
             is_dragging: false,
             is_initialized: false,
+            velocity_tracker: VelocityTracker::new(10),
         }
     }
 
@@ -230,8 +300,8 @@ impl PhysicsWorld {
 
         // Create walls around the container
         // Top wall
-        let top_wall = ColliderBuilder::cuboid(phys_width / 2.0, wall_thickness / 2.0)
-            .translation(vector![0.0, -phys_height / 2.0])
+        let top_wall = ColliderBuilder::cuboid(phys_width, wall_thickness / 2.0)
+            .translation(vector![0.0, 0.0])
             .friction(0.3)
             .restitution(0.5)
             .build();
@@ -239,23 +309,23 @@ impl PhysicsWorld {
 
         // Bottom wall
         let bottom_wall = ColliderBuilder::cuboid(phys_width, wall_thickness)
-            .translation(vector![0.0, phys_height / 2.0])
+            .translation(vector![0.0, phys_height])
             .friction(0.3)
             .restitution(0.5)
             .build();
         self.collider_set.insert(bottom_wall);
 
         // Left wall
-        let left_wall = ColliderBuilder::cuboid(wall_thickness / 2.0, phys_height / 2.0)
-            .translation(vector![-phys_width / 2.0, 0.0])
+        let left_wall = ColliderBuilder::cuboid(wall_thickness / 2.0, phys_height)
+            .translation(vector![0.0, 0.0])
             .friction(0.3)
             .restitution(0.5)
             .build();
         self.collider_set.insert(left_wall);
 
         // Right wall
-        let right_wall = ColliderBuilder::cuboid(wall_thickness / 2.0, phys_height / 2.0)
-            .translation(vector![phys_width / 2.0, 0.0])
+        let right_wall = ColliderBuilder::cuboid(wall_thickness / 2.0, phys_height)
+            .translation(vector![phys_width, 0.0])
             .friction(0.3)
             .restitution(0.5)
             .build();
@@ -275,7 +345,7 @@ impl PhysicsWorld {
 
     fn step(&mut self) -> Vec<Ball> {
         if self.is_initialized {
-            let gravity = vector![0.0, 9.81]; // Downward gravity
+            let gravity = vector![0.0, 0.0]; // Downward gravity
             let integration_parameters = IntegrationParameters::default();
 
             self.physics_pipeline.step(
@@ -333,6 +403,32 @@ impl PhysicsWorld {
         if !self.is_initialized {
             self.is_initialized = true;
         }
+        if !is_dragging {
+            // Clear velocity tracker when stopping drag
+            self.velocity_tracker.clear();
+        }
+    }
+
+    fn track_drag_position(&mut self, screen_x: i32, screen_y: i32) {
+        if self.is_dragging {
+            self.velocity_tracker.add_position(screen_x, screen_y);
+        }
+    }
+
+    fn throw_ball(&mut self, ball_index: usize) {
+        if let Some(velocity) = self.velocity_tracker.calculate_velocity() {
+            if let Some(&handle) = self.ball_handles.get(ball_index) {
+                if let Some(ball) = self.rigid_body_set.get_mut(handle) {
+                    // Convert screen velocity to physics velocity
+                    let phys_vx = velocity.0 / PIXELS_PER_METER;
+                    let phys_vy = velocity.1 / PIXELS_PER_METER;
+
+                    // Apply velocity to the ball
+                    ball.set_linvel(vector![phys_vx, phys_vy], true);
+                }
+            }
+        }
+        self.velocity_tracker.clear();
     }
 }
 
@@ -345,6 +441,7 @@ struct UsePhysicsAndDragHandle {
     container_width: UseStateHandle<f32>,
     container_height: UseStateHandle<f32>,
     show_debug_grid: UseStateHandle<bool>,
+    current_velocity: UseStateHandle<Option<(f32, f32)>>,
     on_mouse_down: Callback<MouseEvent>,
     on_mouse_move: Callback<MouseEvent>,
     on_mouse_up: Callback<MouseEvent>,
@@ -363,6 +460,7 @@ fn use_physics_and_drag(container_ref: NodeRef) -> UsePhysicsAndDragHandle {
     let container_width = use_state(|| 100.0);
     let container_height = use_state(|| 100.0);
     let show_debug_grid = use_state(|| true);
+    let current_velocity = use_state(|| None);
 
     // Initialize physics world with proper ball sizing when container bounds are available
     {
@@ -428,6 +526,7 @@ fn use_physics_and_drag(container_ref: NodeRef) -> UsePhysicsAndDragHandle {
                 let mut world = physics_world.borrow_mut();
                 if let Some(active_index) = world.active_ball_index {
                     world.set_ball_position(active_index, x, y);
+                    world.track_drag_position(x, y);
 
                     let mut ball_data = (*balls).clone();
                     if ball_data.len() <= active_index {
@@ -448,12 +547,45 @@ fn use_physics_and_drag(container_ref: NodeRef) -> UsePhysicsAndDragHandle {
 
     let on_mouse_move = {
         let is_dragging = is_dragging.clone();
-        // `on_mouse_down` と同じロジックを持つため、ダウンイベントのコールバックを再利用
-        let update_positions = on_mouse_down.clone();
+        let physics_world = physics_world.clone();
+        let mouse_position = mouse_position.clone();
+        let balls = balls.clone();
+        let container_ref = container_ref.clone();
+        let current_velocity = current_velocity.clone();
 
         Callback::from(move |e: MouseEvent| {
             if *is_dragging {
-                update_positions.emit(e);
+                if let Some(container) = container_ref.cast::<HtmlDivElement>() {
+                    let rect = container.get_bounding_client_rect();
+                    let x = e.client_x() - rect.left() as i32;
+                    let y = e.client_y() - rect.top() as i32;
+
+                    mouse_position.set(Some(Position { x: e.client_x(), y: e.client_y() }));
+
+                    let mut world = physics_world.borrow_mut();
+                    if let Some(active_index) = world.active_ball_index {
+                        world.set_ball_position(active_index, x, y);
+                        world.track_drag_position(x, y);
+
+                        // Update current velocity display
+                        if let Some(velocity) = world.velocity_tracker.calculate_velocity() {
+                            current_velocity.set(Some(velocity));
+                        }
+
+                        let mut ball_data = (*balls).clone();
+                        if ball_data.len() <= active_index {
+                            ball_data.resize(active_index + 1, Ball {
+                                position: Position { x: 0, y: 0 },
+                                radius: 10.0
+                            });
+                        }
+                        ball_data[active_index] = Ball {
+                            position: Position { x, y },
+                            radius: ball_data[active_index].radius
+                        };
+                        balls.set(ball_data);
+                    }
+                }
             }
         })
     };
@@ -462,11 +594,20 @@ fn use_physics_and_drag(container_ref: NodeRef) -> UsePhysicsAndDragHandle {
         let is_dragging = is_dragging.clone();
         let physics_world = physics_world.clone();
         let mouse_position = mouse_position.clone();
+        let current_velocity = current_velocity.clone();
 
         Callback::from(move |_| {
+            let mut world = physics_world.borrow_mut();
+
+            // Throw the ball with current velocity
+            if let Some(active_index) = world.active_ball_index {
+                world.throw_ball(active_index);
+            }
+
             is_dragging.set(false);
-            physics_world.borrow_mut().set_dragging(false);
+            world.set_dragging(false);
             mouse_position.set(None);
+            current_velocity.set(None);
         })
     };
 
@@ -476,6 +617,7 @@ fn use_physics_and_drag(container_ref: NodeRef) -> UsePhysicsAndDragHandle {
         container_width,
         container_height,
         show_debug_grid,
+        current_velocity,
         on_mouse_down,
         on_mouse_move,
         on_mouse_up,
@@ -526,6 +668,7 @@ fn app() -> Html {
                 container_bounds={(*container_bounds).clone()}
                 balls={(*physics_handle.balls).clone()}
                 show_debug_grid={(*physics_handle.show_debug_grid).clone()}
+                current_velocity={(*physics_handle.current_velocity).clone()}
                 on_toggle_debug_grid={{
                     let show_debug_grid = physics_handle.show_debug_grid.clone();
                     Callback::from(move |_| {
