@@ -4,6 +4,9 @@ use rapier2d::prelude::*;
 use std::rc::Rc;
 use std::cell::RefCell;
 
+// Global scale constant for converting between screen pixels and physics meters
+const PIXELS_PER_METER: f32 = 100.0;
+
 // --- 構造体定義 (変更なし) ---
 #[derive(Clone, PartialEq)]
 struct Position {
@@ -11,11 +14,29 @@ struct Position {
     y: i32,
 }
 
+// Add ball size information
+#[derive(Clone, PartialEq)]
+struct Ball {
+    position: Position,
+    radius: f32,
+}
+
+// Debug grid component
+#[derive(Properties, PartialEq)]
+struct DebugGridProps {
+    container_width: f32,
+    container_height: f32,
+    grid_spacing: f32, // Grid spacing in meters
+}
+
 // --- CoordinatesDisplay コンポーネント (変更なし) ---
 #[derive(Properties, PartialEq)]
 struct CoordinatesDisplayProps {
     position: Option<Position>,
     container_bounds: Option<(i32, i32, i32, i32)>, // (min_x, max_x, min_y, max_y)
+    balls: Vec<Ball>,
+    show_debug_grid: bool,
+    on_toggle_debug_grid: Callback<MouseEvent>,
 }
 
 #[function_component(CoordinatesDisplay)]
@@ -39,17 +60,44 @@ fn coordinates_display(props: &CoordinatesDisplayProps) -> Html {
                     None => "Loading...".to_string(),
                 }
             }</p>
+            <h3>{"Ball Information"}</h3>
+            <p>{format!("Number of balls: {}", props.balls.len())}</p>
+            {
+                props.balls.iter().enumerate().map(|(i, ball)| {
+                    html! {
+                        <p key={i}>{
+                            format!("Ball {}: Position({}, {}), Radius: {:.1}px",
+                                i, ball.position.x, ball.position.y, ball.radius)
+                        }</p>
+                    }
+                }).collect::<Html>()
+            }
+            <h3>{"Physics Setup"}</h3>
+            <p>{"Walls: 4 walls around container with friction and restitution"}</p>
+            <p>{"Gravity: 9.81 m/s² downward"}</p>
+            <p>{"Physics Engine: "}{if props.balls.is_empty() { "Initializing..." } else { "Running" }}</p>
+            <h3>{"Debug Controls"}</h3>
+            <button
+                onclick={props.on_toggle_debug_grid.clone()}
+                style="padding: 8px 16px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;"
+            >
+                {if props.show_debug_grid { "Hide Debug Grid" } else { "Show Debug Grid" }}
+            </button>
+            <p><small>{"Scale: 100 pixels = 1 meter"}</small></p>
         </div>
     }
 }
 
 #[derive(Properties, PartialEq)]
 struct SimulationContainerProps {
-    ball_positions: Vec<Position>,
+    balls: Vec<Ball>,
     on_mouse_down: Callback<MouseEvent>,
     on_mouse_move: Callback<MouseEvent>,
     on_mouse_up: Callback<MouseEvent>,
     container_ref: NodeRef,
+    show_debug_grid: bool,
+    container_width: f32,
+    container_height: f32,
 }
 
 #[function_component(SimulationContainer)]
@@ -60,21 +108,36 @@ fn simulation_container(props: &SimulationContainerProps) -> Html {
             onmousedown={props.on_mouse_down.clone()}
             onmousemove={props.on_mouse_move.clone()}
             onmouseup={props.on_mouse_up.clone()}
-            style="min-height: 100vh; background-color: #f0f0f0; border: 2px solid #ccc; margin: 10px; position: relative;"
+            style="min-height: 100vh; background-color: #f0f0f0; border: 4px solid #333; margin: 10px; position: relative; box-shadow: inset 0 0 20px rgba(0,0,0,0.1);"
         >
+            if props.show_debug_grid {
+                <DebugGrid
+                    container_width={props.container_width}
+                    container_height={props.container_height}
+                    grid_spacing={1.0}
+                />
+            }
             {
-                props.ball_positions.iter().enumerate().map(|(i, pos)| {
+                props.balls.iter().enumerate().map(|(i, ball)| {
+                    let diameter = ball.radius * 2.0;
+                    // Different colors based on ball size
+                    let color = if ball.radius > 15.0 { "#ff6b6b" } // Red for large balls
+                               else if ball.radius > 10.0 { "#4ecdc4" } // Teal for medium balls
+                               else { "#45b7d1" }; // Blue for small balls
+
                     html! {
                         <div key={i} style={format!("
                             position: absolute;
-                            width: 20px;
-                            height: 20px;
-                            background-color: black;
+                            width: {}px;
+                            height: {}px;
+                            background-color: {};
                             border-radius: 50%;
                             transform: translate(-50%, -50%);
                             left: {}px;
                             top: {}px;
-                        ", pos.x, pos.y)}></div>
+                            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+                            z-index: 10;
+                        ", diameter, diameter, color, ball.position.x, ball.position.y)}></div>
                     }
                 }).collect::<Html>()
             }
@@ -95,6 +158,7 @@ struct PhysicsWorld {
     ccd_solver: CCDSolver,
     query_pipeline: QueryPipeline,
     ball_handles: Vec<RigidBodyHandle>,
+    ball_radii: Vec<f32>, // Store screen radii for each ball
     active_ball_index: Option<usize>,
     is_dragging: bool,
     is_initialized: bool,
@@ -102,13 +166,7 @@ struct PhysicsWorld {
 
 impl PhysicsWorld {
     fn new() -> Self {
-        let mut collider_set = ColliderSet::new();
-
-        // Create ground only
-        let ground_collider = ColliderBuilder::cuboid(100.0, 0.1)
-            .translation(vector![0.0, -10.0])
-            .build();
-        collider_set.insert(ground_collider);
+        let collider_set = ColliderSet::new();
 
         Self {
             rigid_body_set: RigidBodySet::new(),
@@ -122,30 +180,102 @@ impl PhysicsWorld {
             ccd_solver: CCDSolver::new(),
             query_pipeline: QueryPipeline::new(),
             ball_handles: Vec::new(),
+            ball_radii: Vec::new(),
             active_ball_index: None,
             is_dragging: false,
             is_initialized: false,
         }
     }
 
-    fn add_ball(&mut self, x: f32, y: f32) -> usize {
+    fn add_ball(&mut self, screen_x: i32, screen_y: i32, screen_radius: f32) -> usize {
+        // Convert screen coordinates to physics coordinates
+        let phys_x = screen_x as f32 / PIXELS_PER_METER;
+        let phys_y = screen_y as f32 / PIXELS_PER_METER;
+        let phys_radius = screen_radius / PIXELS_PER_METER;
+
         // Create ball
         let ball_body = RigidBodyBuilder::dynamic()
-            .translation(vector![x, y])
+            .translation(vector![phys_x, phys_y])
             .build();
-        let ball_collider = ColliderBuilder::ball(0.5)
+        let ball_collider = ColliderBuilder::ball(phys_radius)
             .restitution(0.7)
             .build();
         let ball_handle = self.rigid_body_set.insert(ball_body);
         self.collider_set.insert_with_parent(ball_collider, ball_handle, &mut self.rigid_body_set);
 
         self.ball_handles.push(ball_handle);
+        self.ball_radii.push(screen_radius);
         self.ball_handles.len() - 1 // return index
     }
 
-    fn step(&mut self) -> Vec<(f32, f32)> {
-        if !self.is_dragging && self.is_initialized {
-            let gravity = vector![0.0, -9.81];
+    fn add_ball_with_container_size(&mut self, container_width: f32, container_height: f32) -> usize {
+        // Calculate ball size as 1/10th of container width
+        let screen_radius = container_width / 10.0;
+        let center_x = (container_width / 2.0) as i32;
+        let center_y = (container_height / 4.0) as i32; // Start in upper quarter
+
+        self.add_ball(center_x, center_y, screen_radius)
+    }
+
+    fn init_ball_walls(&mut self, container_width: f32, container_height: f32) {
+        // Clear existing balls and create new collider set
+        self.ball_handles.clear();
+        self.ball_radii.clear();
+        self.collider_set = ColliderSet::new();
+
+        // Convert container dimensions to physics coordinates
+        let phys_width = container_width / PIXELS_PER_METER;
+        let phys_height = container_height / PIXELS_PER_METER;
+        let wall_thickness = 0.5; // 50cm thick walls
+
+        // Create walls around the container
+        // Top wall
+        let top_wall = ColliderBuilder::cuboid(phys_width / 2.0, wall_thickness / 2.0)
+            .translation(vector![0.0, -phys_height / 2.0])
+            .friction(0.3)
+            .restitution(0.5)
+            .build();
+        self.collider_set.insert(top_wall);
+
+        // Bottom wall
+        let bottom_wall = ColliderBuilder::cuboid(phys_width, wall_thickness)
+            .translation(vector![0.0, phys_height / 2.0])
+            .friction(0.3)
+            .restitution(0.5)
+            .build();
+        self.collider_set.insert(bottom_wall);
+
+        // Left wall
+        let left_wall = ColliderBuilder::cuboid(wall_thickness / 2.0, phys_height / 2.0)
+            .translation(vector![-phys_width / 2.0, 0.0])
+            .friction(0.3)
+            .restitution(0.5)
+            .build();
+        self.collider_set.insert(left_wall);
+
+        // Right wall
+        let right_wall = ColliderBuilder::cuboid(wall_thickness / 2.0, phys_height / 2.0)
+            .translation(vector![phys_width / 2.0, 0.0])
+            .friction(0.3)
+            .restitution(0.5)
+            .build();
+        self.collider_set.insert(right_wall);
+
+        // Add initial ball in the center
+        let ball_radius = (container_width / 15.0).min(30.0); // Ball size as 1/15th of width, max 30px
+        let center_x = (container_width / 2.0) as i32;
+        let center_y = (container_height / 2.0) as i32;
+
+        self.add_ball(center_x, center_y, ball_radius);
+        self.set_active_ball(Some(0));
+
+        // Initialize physics engine
+        self.is_initialized = true;
+    }
+
+    fn step(&mut self) -> Vec<Ball> {
+        if self.is_initialized {
+            let gravity = vector![0.0, 9.81]; // Downward gravity
             let integration_parameters = IntegrationParameters::default();
 
             self.physics_pipeline.step(
@@ -166,20 +296,29 @@ impl PhysicsWorld {
         }
 
         if self.is_initialized {
-            self.ball_handles.iter().map(|&handle| {
+            self.ball_handles.iter().enumerate().map(|(i, &handle)| {
                 let ball = &self.rigid_body_set[handle];
                 let translation = ball.translation();
-                (translation.x, translation.y)
+                let screen_x = (translation.x * PIXELS_PER_METER) as i32;
+                let screen_y = (translation.y * PIXELS_PER_METER) as i32;
+                let radius = self.ball_radii.get(i).copied().unwrap_or(10.0);
+
+                Ball {
+                    position: Position { x: screen_x, y: screen_y },
+                    radius,
+                }
             }).collect()
         } else {
             vec![]
         }
     }
 
-    fn set_ball_position(&mut self, ball_index: usize, x: f32, y: f32) {
+    fn set_ball_position(&mut self, ball_index: usize, screen_x: i32, screen_y: i32) {
         if let Some(&handle) = self.ball_handles.get(ball_index) {
             if let Some(ball) = self.rigid_body_set.get_mut(handle) {
-                ball.set_translation(vector![x, y], true);
+                let phys_x = screen_x as f32 / PIXELS_PER_METER;
+                let phys_y = screen_y as f32 / PIXELS_PER_METER;
+                ball.set_translation(vector![phys_x, phys_y], true);
                 ball.set_linvel(vector![0.0, 0.0], true);
             }
         }
@@ -201,8 +340,11 @@ impl PhysicsWorld {
 
 /// カスタムフックの戻り値をまとめるための構造体
 struct UsePhysicsAndDragHandle {
-    ball_positions: UseStateHandle<Vec<Position>>,
+    balls: UseStateHandle<Vec<Ball>>,
     mouse_position: UseStateHandle<Option<Position>>,
+    container_width: UseStateHandle<f32>,
+    container_height: UseStateHandle<f32>,
+    show_debug_grid: UseStateHandle<bool>,
     on_mouse_down: Callback<MouseEvent>,
     on_mouse_move: Callback<MouseEvent>,
     on_mouse_up: Callback<MouseEvent>,
@@ -212,28 +354,50 @@ struct UsePhysicsAndDragHandle {
 #[hook]
 fn use_physics_and_drag(container_ref: NodeRef) -> UsePhysicsAndDragHandle {
     let physics_world = use_state(|| {
-        let mut world = PhysicsWorld::new();
-        world.add_ball(0.0, 10.0);
-        world.set_active_ball(Some(0));
+        let world = PhysicsWorld::new();
         Rc::new(RefCell::new(world))
     });
-    let ball_positions = use_state(Vec::new);
+    let balls = use_state(Vec::new);
     let mouse_position = use_state(|| None);
     let is_dragging = use_state(|| false);
+    let container_width = use_state(|| 100.0);
+    let container_height = use_state(|| 100.0);
+    let show_debug_grid = use_state(|| true);
+
+    // Initialize physics world with proper ball sizing when container bounds are available
+    {
+        let physics_world = physics_world.clone();
+        let container_width = container_width.clone();
+        let container_height = container_height.clone();
+        use_effect_with(container_ref.clone(), move |container_ref| {
+            if let Some(container) = container_ref.cast::<HtmlDivElement>() {
+                let rect = container.get_bounding_client_rect();
+                let width = rect.width() as f32;
+                let height = rect.height() as f32;
+
+                // Update container dimensions for debug grid
+                container_width.set(width);
+                container_height.set(height);
+
+                let mut world = physics_world.borrow_mut();
+                // Clear existing balls and add a new one with proper sizing
+                world.ball_handles.clear();
+                world.ball_radii.clear();
+                world.init_ball_walls(width, height);
+            }
+            || ()
+        });
+    }
 
     // 物理エンジンのステップ実行
     {
         let physics_world = physics_world.clone();
-        let ball_positions = ball_positions.clone();
+        let balls = balls.clone();
         use_effect_with((), move |_| {
             let handle = gloo::timers::callback::Interval::new(16, move || {
-                let positions = physics_world.borrow_mut().step();
-                let ui_positions: Vec<Position> = positions.iter().map(|(x, y)| Position {
-                    x: (x * 100.0) as i32,
-                    y: (y * 100.0) as i32,
-                }).collect();
-                if !ui_positions.is_empty() {
-                    ball_positions.set(ui_positions);
+                let ball_data = physics_world.borrow_mut().step();
+                if !ball_data.is_empty() {
+                    balls.set(ball_data);
                 }
             });
             // `handle` を `forget` して、コンポーネントが破棄されてもタイマーが止まらないようにする
@@ -247,7 +411,7 @@ fn use_physics_and_drag(container_ref: NodeRef) -> UsePhysicsAndDragHandle {
         let is_dragging = is_dragging.clone();
         let physics_world = physics_world.clone();
         let mouse_position = mouse_position.clone();
-        let ball_positions = ball_positions.clone();
+        let balls = balls.clone();
         let container_ref = container_ref.clone();
 
         Callback::from(move |e: MouseEvent| {
@@ -263,16 +427,20 @@ fn use_physics_and_drag(container_ref: NodeRef) -> UsePhysicsAndDragHandle {
 
                 let mut world = physics_world.borrow_mut();
                 if let Some(active_index) = world.active_ball_index {
-                    let physics_x = (x as f32) / 100.0;
-                    let physics_y = (y as f32) / 100.0;
-                    world.set_ball_position(active_index, physics_x, physics_y);
+                    world.set_ball_position(active_index, x, y);
 
-                    let mut positions = (*ball_positions).clone();
-                    if positions.len() <= active_index {
-                        positions.resize(active_index + 1, Position { x: 0, y: 0 });
+                    let mut ball_data = (*balls).clone();
+                    if ball_data.len() <= active_index {
+                        ball_data.resize(active_index + 1, Ball {
+                            position: Position { x: 0, y: 0 },
+                            radius: 10.0
+                        });
                     }
-                    positions[active_index] = Position { x, y };
-                    ball_positions.set(positions);
+                    ball_data[active_index] = Ball {
+                        position: Position { x, y },
+                        radius: ball_data[active_index].radius
+                    };
+                    balls.set(ball_data);
                 }
             }
         })
@@ -303,8 +471,11 @@ fn use_physics_and_drag(container_ref: NodeRef) -> UsePhysicsAndDragHandle {
     };
 
     UsePhysicsAndDragHandle {
-        ball_positions,
+        balls,
         mouse_position,
+        container_width,
+        container_height,
+        show_debug_grid,
         on_mouse_down,
         on_mouse_move,
         on_mouse_up,
@@ -353,14 +524,25 @@ fn app() -> Html {
             <CoordinatesDisplay
                 position={(*physics_handle.mouse_position).clone()}
                 container_bounds={(*container_bounds).clone()}
+                balls={(*physics_handle.balls).clone()}
+                show_debug_grid={(*physics_handle.show_debug_grid).clone()}
+                on_toggle_debug_grid={{
+                    let show_debug_grid = physics_handle.show_debug_grid.clone();
+                    Callback::from(move |_| {
+                        show_debug_grid.set(!*show_debug_grid);
+                    })
+                }}
             />
 
             <SimulationContainer
-                ball_positions={(*physics_handle.ball_positions).clone()}
+                balls={(*physics_handle.balls).clone()}
                 on_mouse_down={physics_handle.on_mouse_down}
                 on_mouse_move={physics_handle.on_mouse_move}
                 on_mouse_up={physics_handle.on_mouse_up}
                 container_ref={container_ref}
+                show_debug_grid={(*physics_handle.show_debug_grid).clone()}
+                container_width={(*physics_handle.container_width).clone()}
+                container_height={(*physics_handle.container_height).clone()}
             />
         </>
     }
@@ -369,4 +551,106 @@ fn app() -> Html {
 // --- main (変更なし) ---
 fn main() {
     yew::Renderer::<App>::new().render();
+}
+
+#[function_component(DebugGrid)]
+fn debug_grid(props: &DebugGridProps) -> Html {
+    let grid_spacing_pixels = props.grid_spacing * PIXELS_PER_METER;
+    let num_horizontal_lines = (props.container_height / grid_spacing_pixels).ceil() as i32;
+    let num_vertical_lines = (props.container_width / grid_spacing_pixels).ceil() as i32;
+
+    html! {
+        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1;">
+            {
+                // Horizontal grid lines
+                (0..=num_horizontal_lines).map(|i| {
+                    let y = i as f32 * grid_spacing_pixels;
+                    let meter_y = y / PIXELS_PER_METER;
+                    html! {
+                        <div key={format!("h-{}", i)} style={format!("
+                            position: absolute;
+                            left: 0;
+                            top: {}px;
+                            width: 100%;
+                            height: 1px;
+                            background-color: rgba(0, 255, 0, 0.3);
+                            z-index: 1;
+                        ", y)}>
+                            <span style={format!("
+                                position: absolute;
+                                left: 5px;
+                                top: -15px;
+                                font-size: 10px;
+                                color: green;
+                                background-color: rgba(255, 255, 255, 0.8);
+                                padding: 1px 3px;
+                                border-radius: 2px;
+                            ")}>
+                                {format!("{:.1}m", meter_y)}
+                            </span>
+                        </div>
+                    }
+                }).collect::<Html>()
+            }
+            {
+                // Vertical grid lines
+                (0..=num_vertical_lines).map(|i| {
+                    let x = i as f32 * grid_spacing_pixels;
+                    let meter_x = x / PIXELS_PER_METER;
+                    html! {
+                        <div key={format!("v-{}", i)} style={format!("
+                            position: absolute;
+                            top: 0;
+                            left: {}px;
+                            width: 1px;
+                            height: 100%;
+                            background-color: rgba(0, 255, 0, 0.3);
+                            z-index: 1;
+                        ", x)}>
+                            <span style={format!("
+                                position: absolute;
+                                top: 5px;
+                                left: -20px;
+                                font-size: 10px;
+                                color: green;
+                                background-color: rgba(255, 255, 255, 0.8);
+                                padding: 1px 3px;
+                                border-radius: 2px;
+                                transform: rotate(-90deg);
+                                transform-origin: center;
+                            ")}>
+                                {format!("{:.1}m", meter_x)}
+                            </span>
+                        </div>
+                    }
+                }).collect::<Html>()
+            }
+            // Origin marker
+            <div style="
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 10px;
+                height: 10px;
+                background-color: red;
+                border-radius: 50%;
+                z-index: 2;
+                border: 2px solid white;
+            ">
+                <span style="
+                    position: absolute;
+                    top: -20px;
+                    left: -10px;
+                    font-size: 10px;
+                    color: red;
+                    background-color: rgba(255, 255, 255, 0.9);
+                    padding: 1px 3px;
+                    border-radius: 2px;
+                    white-space: nowrap;
+                ">
+                    {"Origin (0,0)"}
+                </span>
+            </div>
+        </div>
+    }
 }
