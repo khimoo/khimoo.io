@@ -294,24 +294,26 @@ pub fn use_physics_and_drag(container_ref: NodeRef) -> UsePhysicsAndDragHandle {
         let _balls = balls.clone();
         let pending_grow_for_mouse_up = pending_grow.clone(); // Clone for this closure
 
-        Callback::from(move |_| {
-            {
-                let mut world = physics_world.borrow_mut();
-                // 生成中のボールも含めて、active_ball_indexがSomeなら必ず投げる
-                if let Some(active_index) = world.active_ball_index {
-                    world.throw_ball(active_index);
-                    if let Some(velocity) = world.velocity_tracker.calculate_velocity() {
-                        log!("Throwing ball with velocity: ", velocity.0, ", ", velocity.1);
-                    } else {
-                        log!("Throwing ball with no velocity (velocity_tracker empty).");
+        Callback::from(move |e: MouseEvent| {
+            if e.button() == 0 { // 左クリックが離された場合のみ処理
+                {
+                    let mut world = physics_world.borrow_mut();
+                    // 生成中のボールも含めて、active_ball_indexがSomeなら必ず投げる
+                    if let Some(active_index) = world.active_ball_index {
+                        world.throw_ball(active_index);
+                        if let Some(velocity) = world.velocity_tracker.calculate_velocity() {
+                            log!("Throwing ball with velocity: ", velocity.0, ", ", velocity.1);
+                        } else {
+                            log!("Throwing ball with no velocity (velocity_tracker empty).");
+                        }
                     }
+                    world.set_dragging(false);
                 }
-                world.set_dragging(false);
+                is_dragging.set(false);
+                mouse_position.set(None);
+                current_velocity.set(None);
+                pending_grow_for_mouse_up.set(None);
             }
-            is_dragging.set(false);
-            mouse_position.set(None);
-            current_velocity.set(None);
-            pending_grow_for_mouse_up.set(None);
         })
     };
 
