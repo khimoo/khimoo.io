@@ -27,7 +27,6 @@ pub fn app() -> Html {
                 container_height={*physics_handle.container_height.clone()}
                 on_ball_context_menu={physics_handle.on_ball_context_menu.clone()}
             />
-
             <CoordinatesDisplay
                 position={(*physics_handle.mouse_position).clone()}
                 container_bounds={(*container_bounds).clone()}

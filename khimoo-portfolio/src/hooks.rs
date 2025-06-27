@@ -109,7 +109,7 @@ pub fn use_physics_and_drag(container_ref: NodeRef) -> UsePhysicsAndDragHandle {
                 .unwrap_or(0.0);
             let duration = ((now - start_time) / 1000.0).clamp(0.0, 2.0); // 秒
             let min_radius = 10.0f32;
-            let max_radius = 60.0f32;
+            let max_radius = 130.0f32;
             let duration_f32 = duration as f32;
             let radius = min_radius + (max_radius - min_radius) * (duration_f32 / 2.0);
             world.set_ball_radius(grow_idx, radius);
