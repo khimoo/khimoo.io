@@ -1,3 +1,4 @@
+use gloo_console::log;
 use rapier2d::prelude::*;
 use crate::types::{Ball, Position, VelocityTracker};
 
@@ -44,180 +45,158 @@ impl PhysicsWorld {
             velocity_tracker: VelocityTracker::new(10),
         }
     }
+
     pub fn add_ball(&mut self, screen_x: i32, screen_y: i32, screen_radius: f32) -> usize {
-        let phys_x = screen_x as f32 / PIXELS_PER_METER;
-        let phys_y = screen_y as f32 / PIXELS_PER_METER;
-        let phys_radius = screen_radius / PIXELS_PER_METER;
-        let ball_body = RigidBodyBuilder::dynamic()
-            .translation(vector![phys_x, phys_y])
+        let rigid_body = RigidBodyBuilder::dynamic()
+            .translation(vector![
+                screen_x as f32 / PIXELS_PER_METER,
+                screen_y as f32 / PIXELS_PER_METER
+            ])
             .build();
-        let ball_collider = ColliderBuilder::ball(phys_radius)
+        let collider = ColliderBuilder::ball(screen_radius / PIXELS_PER_METER)
             .restitution(0.7)
             .build();
-        let ball_handle = self.rigid_body_set.insert(ball_body);
-        self.collider_set.insert_with_parent(ball_collider, ball_handle, &mut self.rigid_body_set);
+        let ball_handle = self.rigid_body_set.insert(rigid_body);
+        self.collider_set.insert_with_parent(collider, ball_handle, &mut self.rigid_body_set);
         self.ball_handles.push(ball_handle);
         self.ball_radii.push(screen_radius);
         self.ball_handles.len() - 1
     }
-    pub fn add_ball_with_container_size(&mut self, container_width: f32, container_height: f32) -> usize {
-        let screen_radius = container_width / 10.0;
-        let center_x = (container_width / 2.0) as i32;
-        let center_y = (container_height / 4.0) as i32;
-        self.add_ball(center_x, center_y, screen_radius)
-    }
+
     pub fn init_ball_walls(&mut self, container_width: f32, container_height: f32) {
-        self.ball_handles.clear();
-        self.ball_radii.clear();
-        self.collider_set = ColliderSet::new();
-        let phys_width = container_width / PIXELS_PER_METER;
-        let phys_height = container_height / PIXELS_PER_METER;
-        let wall_thickness = 0.5;
-        let top_wall = ColliderBuilder::cuboid(phys_width, wall_thickness / 2.0)
-            .translation(vector![0.0, 0.0])
-            .friction(0.3)
-            .restitution(0.5)
+        // 床
+        let ground_collider = ColliderBuilder::cuboid(container_width / 2.0 / PIXELS_PER_METER, 10.0 / PIXELS_PER_METER)
+            .translation(vector![container_width / 2.0 / PIXELS_PER_METER, container_height / PIXELS_PER_METER + 10.0 / PIXELS_PER_METER])
             .build();
-        self.collider_set.insert(top_wall);
-        let bottom_wall = ColliderBuilder::cuboid(phys_width, wall_thickness)
-            .translation(vector![0.0, phys_height])
-            .friction(0.3)
-            .restitution(0.5)
+        self.collider_set.insert(ground_collider);
+
+        // 天井
+        let ceiling_collider = ColliderBuilder::cuboid(container_width / 2.0 / PIXELS_PER_METER, 10.0 / PIXELS_PER_METER)
+            .translation(vector![container_width / 2.0 / PIXELS_PER_METER, -10.0 / PIXELS_PER_METER])
             .build();
-        self.collider_set.insert(bottom_wall);
-        let left_wall = ColliderBuilder::cuboid(wall_thickness / 2.0, phys_height)
-            .translation(vector![0.0, 0.0])
-            .friction(0.3)
-            .restitution(0.5)
+        self.collider_set.insert(ceiling_collider);
+
+        // 左壁
+        let left_wall_collider = ColliderBuilder::cuboid(10.0 / PIXELS_PER_METER, container_height / 2.0 / PIXELS_PER_METER)
+            .translation(vector![-10.0 / PIXELS_PER_METER, container_height / 2.0 / PIXELS_PER_METER])
             .build();
-        self.collider_set.insert(left_wall);
-        let right_wall = ColliderBuilder::cuboid(wall_thickness / 2.0, phys_height)
-            .translation(vector![phys_width, 0.0])
-            .friction(0.3)
-            .restitution(0.5)
+        self.collider_set.insert(left_wall_collider);
+
+        // 右壁
+        let right_wall_collider = ColliderBuilder::cuboid(10.0 / PIXELS_PER_METER, container_height / 2.0 / PIXELS_PER_METER)
+            .translation(vector![container_width / PIXELS_PER_METER + 10.0 / PIXELS_PER_METER, container_height / 2.0 / PIXELS_PER_METER])
             .build();
-        self.collider_set.insert(right_wall);
-        let ball_radius = (container_width / 15.0).min(30.0);
-        let center_x = (container_width / 2.0) as i32;
-        let center_y = (container_height / 2.0) as i32;
-        self.add_ball(center_x, center_y, ball_radius);
-        self.set_active_ball(Some(0));
+        self.collider_set.insert(right_wall_collider);
+
         self.is_initialized = true;
     }
+
     pub fn step(&mut self) -> Vec<Ball> {
-        if self.is_initialized {
-            let gravity = vector![0.0, 0.0];
-            let integration_parameters = IntegrationParameters::default();
-            self.physics_pipeline.step(
-                &gravity,
-                &integration_parameters,
-                &mut self.island_manager,
-                &mut self.broad_phase,
-                &mut self.narrow_phase,
-                &mut self.rigid_body_set,
-                &mut self.collider_set,
-                &mut self.impulse_joint_set,
-                &mut self.multibody_joint_set,
-                &mut self.ccd_solver,
-                Some(&mut self.query_pipeline),
-                &(),
-                &(),
-            );
+        let gravity = vector![0.0, 9.81];
+        let integration_parameters = IntegrationParameters::default();
+        self.physics_pipeline.step(
+            &gravity,
+            &integration_parameters,
+            &mut self.island_manager,
+            &mut self.broad_phase,
+            &mut self.narrow_phase,
+            &mut self.rigid_body_set,
+            &mut self.collider_set,
+            &mut self.impulse_joint_set,
+            &mut self.multibody_joint_set,
+            &mut self.ccd_solver,
+            Some(&mut self.query_pipeline),
+            &(),
+            &(),
+        );
+
+        let mut balls_data = Vec::new();
+        for (i, handle) in self.ball_handles.iter().enumerate() {
+            if let Some(ball_body) = self.rigid_body_set.get(*handle) {
+                balls_data.push(Ball {
+                    position: Position {
+                        x: (ball_body.translation().x * PIXELS_PER_METER) as i32,
+                        y: (ball_body.translation().y * PIXELS_PER_METER) as i32,
+                    },
+                    radius: self.ball_radii[i],
+                });
+            }
         }
-        if self.is_initialized {
-            self.ball_handles.iter().enumerate().map(|(i, &handle)| {
-                let ball = &self.rigid_body_set[handle];
-                let translation = ball.translation();
-                let screen_x = (translation.x * PIXELS_PER_METER) as i32;
-                let screen_y = (translation.y * PIXELS_PER_METER) as i32;
-                let radius = self.ball_radii.get(i).copied().unwrap_or(10.0);
-                Ball {
-                    position: Position { x: screen_x, y: screen_y },
-                    radius,
-                }
-            }).collect()
-        } else {
-            vec![]
-        }
+        balls_data
     }
-    pub fn set_ball_position(&mut self, ball_index: usize, screen_x: i32, screen_y: i32) {
-        if let Some(&handle) = self.ball_handles.get(ball_index) {
-            if let Some(ball) = self.rigid_body_set.get_mut(handle) {
-                let phys_x = screen_x as f32 / PIXELS_PER_METER;
-                let phys_y = screen_y as f32 / PIXELS_PER_METER;
-                ball.set_translation(vector![phys_x, phys_y], true);
+
+    pub fn set_ball_radius(&mut self, index: usize, new_radius: f32) {
+        if let Some(handle) = self.ball_handles.get(index) {
+            if let Some(collider) = self.collider_set.get_mut(self.rigid_body_set.get(*handle).unwrap().colliders()[0]) {
+                collider.set_shape(SharedShape::ball(new_radius / PIXELS_PER_METER));
+                self.ball_radii[index] = new_radius;
             }
         }
     }
-    pub fn set_active_ball(&mut self, ball_index: Option<usize>) {
-        self.active_ball_index = ball_index;
-    }
-    pub fn set_dragging(&mut self, is_dragging: bool) {
-        self.is_dragging = is_dragging;
-        if !self.is_initialized {
-            self.is_initialized = true;
-        }
-        if !is_dragging {
-            self.velocity_tracker.clear();
-        }
-    }
-    pub fn track_drag_position(&mut self, screen_x: i32, screen_y: i32) {
-        if self.is_dragging {
-            self.velocity_tracker.add_position(screen_x, screen_y);
+
+    pub fn set_ball_position(&mut self, index: usize, screen_x: i32, screen_y: i32) {
+        if let Some(handle) = self.ball_handles.get(index) {
+            if let Some(ball_body) = self.rigid_body_set.get_mut(*handle) {
+                ball_body.set_translation(vector![
+                    screen_x as f32 / PIXELS_PER_METER,
+                    screen_y as f32 / PIXELS_PER_METER
+                ], true);
+                ball_body.set_linvel(vector![0.0, 0.0], true); // ドラッグ中は速度をゼロにする
+                ball_body.set_angvel(0.0, true); // ドラッグ中は角速度をゼロにする
+            }
         }
     }
-    pub fn throw_ball(&mut self, ball_index: usize) {
-        if let Some(velocity) = self.velocity_tracker.calculate_velocity() {
-            if let Some(&handle) = self.ball_handles.get(ball_index) {
-                if let Some(ball) = self.rigid_body_set.get_mut(handle) {
-                    let phys_vx = velocity.0 / PIXELS_PER_METER;
-                    let phys_vy = velocity.1 / PIXELS_PER_METER;
-                    ball.set_linvel(vector![phys_vx, phys_vy], true);
+
+    pub fn set_active_ball(&mut self, index: Option<usize>) {
+        self.active_ball_index = index;
+    }
+
+    pub fn set_dragging(&mut self, dragging: bool) {
+        self.is_dragging = dragging;
+    }
+
+    pub fn get_is_dragging(&self) -> bool {
+        self.is_dragging
+    }
+
+    pub fn track_drag_position(&mut self, x: i32, y: i32) {
+        self.velocity_tracker.add_position(x, y);
+    }
+
+    pub fn throw_ball(&mut self, index: usize) {
+        if let Some(handle) = self.ball_handles.get(index) {
+            if let Some(ball_body) = self.rigid_body_set.get_mut(*handle) {
+                if let Some((vx, vy)) = self.velocity_tracker.calculate_velocity() {
+                    log!("Applying velocity: ", vx, ", ", vy);
+                    ball_body.set_linvel(vector![vx / PIXELS_PER_METER, vy / PIXELS_PER_METER], true);
+                } else {
+                    log!("No velocity to apply.");
                 }
             }
         }
         self.velocity_tracker.clear();
     }
+
     pub fn remove_ball(&mut self, index: usize) {
-        if index < self.ball_handles.len() {
-            let handle = self.ball_handles.remove(index);
-            self.ball_radii.remove(index);
+        if let Some(handle) = self.ball_handles.get(index) {
             self.rigid_body_set.remove(
-                handle,
+                *handle,
                 &mut self.island_manager,
                 &mut self.collider_set,
                 &mut self.impulse_joint_set,
                 &mut self.multibody_joint_set,
                 true,
             );
-        }
-    }
-    pub fn set_ball_radius(&mut self, index: usize, radius: f32) {
-        if let Some(r) = self.ball_radii.get_mut(index) {
-            *r = radius;
-        }
-        if let Some(&handle) = self.ball_handles.get(index) {
-            // Remove all colliders attached to this rigid body
-            let mut to_remove = vec![];
-            for (collider_handle, collider) in self.collider_set.iter() {
-                if collider.parent() == Some(handle) {
-                    to_remove.push(collider_handle);
+            self.ball_handles.remove(index);
+            self.ball_radii.remove(index);
+            // active_ball_indexが削除されたボールを指している場合、Noneにする
+            if let Some(active_idx) = self.active_ball_index {
+                if active_idx == index {
+                    self.active_ball_index = None;
+                } else if active_idx > index {
+                    self.active_ball_index = Some(active_idx - 1);
                 }
             }
-            for collider_handle in to_remove {
-                self.collider_set.remove(
-                    collider_handle,
-                    &mut self.island_manager,
-                    &mut self.rigid_body_set,
-                    true,
-                );
-            }
-            // Add new collider with updated radius
-            let phys_radius = radius / PIXELS_PER_METER;
-            let new_collider = ColliderBuilder::ball(phys_radius)
-                .restitution(0.7)
-                .build();
-            self.collider_set.insert_with_parent(new_collider, handle, &mut self.rigid_body_set);
         }
     }
 }

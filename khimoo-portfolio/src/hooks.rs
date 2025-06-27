@@ -1,3 +1,4 @@
+use gloo_console::log;
 use yew::prelude::*;
 use web_sys::{HtmlDivElement, MouseEvent};
 use crate::physics::PhysicsWorld;
@@ -184,11 +185,14 @@ pub fn use_physics_and_drag(container_ref: NodeRef) -> UsePhysicsAndDragHandle {
                 if let Some(active_index) = hit_index {
                     is_dragging.set(true);
                     let mut world = physics_world.borrow_mut();
+                    world.velocity_tracker.clear(); // Clear tracker on new drag
                     world.set_dragging(true);
+                    log!("on_mouse_down: PhysicsWorld.is_dragging after set_dragging(true): {}", world.get_is_dragging()); // ADD THIS LOG
                     mouse_position.set(Some(Position { x: e.client_x(), y: e.client_y() }));
                     world.set_active_ball(Some(active_index));
                     // 掴んだballの位置を即時更新（既存仕様）
                     world.set_ball_position(active_index, x, y);
+                    world.track_drag_position(x, y); // Add initial position to tracker
 
                     let mut ball_data = (*balls).clone();
                     if ball_data.len() <= active_index {
@@ -209,6 +213,8 @@ pub fn use_physics_and_drag(container_ref: NodeRef) -> UsePhysicsAndDragHandle {
                         .map(|p| p.now())
                         .unwrap_or(0.0);
                     let mut world = physics_world.borrow_mut();
+                    world.set_dragging(true);
+                    world.velocity_tracker.clear(); // Clear tracker on new ball creation
                     let min_radius = 10.0f32;
                     let idx = world.add_ball(x, y, min_radius);
                     let mut new_balls = (*balls).clone();
@@ -219,8 +225,11 @@ pub fn use_physics_and_drag(container_ref: NodeRef) -> UsePhysicsAndDragHandle {
                     balls.set(new_balls);
                     world.set_active_ball(Some(idx));
                     is_dragging.set(true);
+                    log!("on_mouse_down: is_dragging state after set(true): {}", *is_dragging);
                     mouse_position.set(Some(Position { x: e.client_x(), y: e.client_y() }));
                     pending_grow.set(Some((idx, now)));
+                    world.track_drag_position(x, y); // Add initial position to tracker
+                    log!("on_mouse_down: PhysicsWorld.is_dragging after set_dragging(true) for new ball: {}", world.get_is_dragging()); // ADD THIS LOG
                 }
             }
         })
@@ -296,6 +305,11 @@ pub fn use_physics_and_drag(container_ref: NodeRef) -> UsePhysicsAndDragHandle {
                 // 生成中のボールも含めて、active_ball_indexがSomeなら必ず投げる
                 if let Some(active_index) = world.active_ball_index {
                     world.throw_ball(active_index);
+                    if let Some(velocity) = world.velocity_tracker.calculate_velocity() {
+                        log!("Throwing ball with velocity: ", velocity.0, ", ", velocity.1);
+                    } else {
+                        log!("Throwing ball with no velocity (velocity_tracker empty).");
+                    }
                 }
                 world.set_dragging(false);
             }

@@ -10,3 +10,4 @@ rapier2d = { version = "0.17.2", features = ["wasm-bindgen"] }
 wasm-bindgen = "0.2"
 gloo = { version = "0.10", features = ["timers"] }
 uuid = { version = "1", features = ["v4", "js"] }
+gloo-console = "0.3.0"
