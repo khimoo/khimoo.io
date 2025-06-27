@@ -37,8 +37,8 @@ pub fn app() -> Html {
                 on_mouse_up={physics_handle.on_mouse_up}
                 container_ref={container_ref}
                 show_debug_grid={(*physics_handle.show_debug_grid).clone()}
-                container_width={(*physics_handle.container_width).clone()}
-                container_height={(*physics_handle.container_height).clone()}
+                container_width={*physics_handle.container_width.clone()}
+                container_height={*physics_handle.container_height.clone()}
                 on_ball_context_menu={physics_handle.on_ball_context_menu.clone()}
             />
         </>

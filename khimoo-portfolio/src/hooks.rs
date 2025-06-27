@@ -2,7 +2,7 @@ use gloo_console::log;
 use yew::prelude::*;
 use web_sys::{HtmlDivElement, MouseEvent};
 use crate::physics::PhysicsWorld;
-use crate::types::{Position, Ball};
+use crate::types::{Ball, Position};
 
 pub struct UsePhysicsAndDragHandle {
     pub balls: UseStateHandle<Vec<Ball>>,
@@ -26,8 +26,8 @@ pub fn use_physics_and_drag(container_ref: NodeRef) -> UsePhysicsAndDragHandle {
     let balls = use_state(Vec::new);
     let mouse_position = use_state(|| None);
     let is_dragging = use_state(|| false);
-    let container_width = use_state(|| 100.0);
-    let container_height = use_state(|| 100.0);
+    let container_width = use_state(|| 0.0);
+    let container_height = use_state(|| 0.0);
     let show_debug_grid = use_state(|| true);
     let current_velocity = use_state(|| None);
     let pending_grow = use_state(|| None);
@@ -43,15 +43,13 @@ pub fn use_physics_and_drag(container_ref: NodeRef) -> UsePhysicsAndDragHandle {
                 let width = rect.width() as f32;
                 let height = rect.height() as f32;
 
-                // Update container dimensions for debug grid
-                container_width.set(width);
-                container_height.set(height);
-
                 let mut world = physics_world.borrow_mut();
                 // すでに初期化済みなら何もしない
                 if !world.is_initialized {
                     world.init_ball_walls(width, height);
                 }
+                container_width.set(world.container_width);
+                container_height.set(world.container_height);
             }
             || ()
         });
@@ -76,7 +74,7 @@ pub fn use_physics_and_drag(container_ref: NodeRef) -> UsePhysicsAndDragHandle {
     let on_ball_context_menu = {
         let balls = balls.clone();
         let physics_world = physics_world.clone();
-        let container_ref = container_ref.clone();
+        let _container_ref = container_ref.clone();
         (0..balls.len()).map(|i| {
             let balls = balls.clone();
             let physics_world = physics_world.clone();
@@ -117,7 +115,7 @@ pub fn use_physics_and_drag(container_ref: NodeRef) -> UsePhysicsAndDragHandle {
             world.set_ball_radius(grow_idx, radius);
 
             // 生成中もマウス座標で速度記録
-            if let Some(active_index) = world.active_ball_index {
+            if let Some(_active_index) = world.active_ball_index {
                 if let Some(pos) = (*mouse_position).as_ref() {
                     world.track_drag_position(pos.x, pos.y);
                 }
@@ -129,17 +127,17 @@ pub fn use_physics_and_drag(container_ref: NodeRef) -> UsePhysicsAndDragHandle {
     {
         let physics_world = physics_world.clone();
         let balls = balls.clone();
-        let pending_grow = pending_grow.clone();
+        let pending_grow_for_effect = pending_grow.clone(); // Clone for this effect's closure
         let mouse_position = mouse_position.clone();
-        use_effect_with(pending_grow.clone(), move |pending_grow| {
-            if pending_grow.is_some() {
+        use_effect_with(pending_grow.clone(), move |_| { // This pending_grow.clone() is for the effect's dependency
+            if pending_grow_for_effect.is_some() { // Use the cloned one here
                 let physics_world = physics_world.clone();
                 let balls = balls.clone();
-                let pending_grow = pending_grow.clone();
+                let pending_grow_inner = pending_grow_for_effect.clone(); // Clone for the interval closure
                 let mouse_position = mouse_position.clone();
                 let interval = gloo::timers::callback::Interval::new(16, move || {
                     let mut world = physics_world.borrow_mut();
-                    grow_ball(&mut world, &balls, &pending_grow, &mouse_position);
+                    grow_ball(&mut world, &balls, &pending_grow_inner, &mouse_position);
                 });
                 // Box化して返す
                 return Box::new(move || drop(interval)) as Box<dyn FnOnce()>;
@@ -155,9 +153,7 @@ pub fn use_physics_and_drag(container_ref: NodeRef) -> UsePhysicsAndDragHandle {
         let mouse_position = mouse_position.clone();
         let balls = balls.clone();
         let container_ref = container_ref.clone();
-        let container_width = container_width.clone();
-        let container_height = container_height.clone();
-        let pending_grow = pending_grow.clone();
+        let pending_grow_for_mouse_down = pending_grow.clone(); // Clone for this closure
 
         Callback::from(move |e: MouseEvent| {
             // 左クリック以外は何もしない
@@ -227,7 +223,7 @@ pub fn use_physics_and_drag(container_ref: NodeRef) -> UsePhysicsAndDragHandle {
                     is_dragging.set(true);
                     log!("on_mouse_down: is_dragging state after set(true): {}", *is_dragging);
                     mouse_position.set(Some(Position { x: e.client_x(), y: e.client_y() }));
-                    pending_grow.set(Some((idx, now)));
+                    pending_grow_for_mouse_down.set(Some((idx, now))); // Use cloned pending_grow
                     world.track_drag_position(x, y); // Add initial position to tracker
                     log!("on_mouse_down: PhysicsWorld.is_dragging after set_dragging(true) for new ball: {}", world.get_is_dragging()); // ADD THIS LOG
                 }
@@ -242,7 +238,7 @@ pub fn use_physics_and_drag(container_ref: NodeRef) -> UsePhysicsAndDragHandle {
         let balls = balls.clone();
         let container_ref = container_ref.clone();
         let current_velocity = current_velocity.clone();
-        let pending_grow = pending_grow.clone();
+        let _pending_grow = pending_grow.clone();
 
         Callback::from(move |e: MouseEvent| {
             if *is_dragging {
@@ -255,7 +251,7 @@ pub fn use_physics_and_drag(container_ref: NodeRef) -> UsePhysicsAndDragHandle {
 
                     let mut world = physics_world.borrow_mut();
                     // ここで必ずtrack_drag_positionを呼ぶ
-                    if let Some(active_index) = world.active_ball_index {
+                    if let Some(_active_index) = world.active_ball_index {
                         world.track_drag_position(x, y);
                     }
 
@@ -296,8 +292,8 @@ pub fn use_physics_and_drag(container_ref: NodeRef) -> UsePhysicsAndDragHandle {
         let physics_world = physics_world.clone();
         let mouse_position = mouse_position.clone();
         let current_velocity = current_velocity.clone();
-        let balls = balls.clone();
-        let pending_grow = pending_grow.clone();
+        let _balls = balls.clone();
+        let pending_grow_for_mouse_up = pending_grow.clone(); // Clone for this closure
 
         Callback::from(move |_| {
             {
@@ -316,7 +312,7 @@ pub fn use_physics_and_drag(container_ref: NodeRef) -> UsePhysicsAndDragHandle {
             is_dragging.set(false);
             mouse_position.set(None);
             current_velocity.set(None);
-            pending_grow.set(None);
+            pending_grow_for_mouse_up.set(None); // Use cloned pending_grow
         })
     };
 
