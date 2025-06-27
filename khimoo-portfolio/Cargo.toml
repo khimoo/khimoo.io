@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 yew = { version = "0.21", features = ["csr"] }
-web-sys = { version = "0.3", features = ["CanvasRenderingContext2d", "HtmlCanvasElement", "HtmlDivElement", "Element", "DomRect"] }
+web-sys = { version = "0.3", features = ["CanvasRenderingContext2d", "HtmlCanvasElement", "HtmlDivElement", "Element", "DomRect", "Performance"] }
 rapier2d = { version = "0.17.2", features = ["wasm-bindgen"] }
 wasm-bindgen = "0.2"
 gloo = { version = "0.10", features = ["timers"] }
