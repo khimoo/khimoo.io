@@ -101,6 +101,7 @@ pub fn use_physics_and_drag(container_ref: NodeRef) -> UsePhysicsAndDragHandle {
         world: &mut PhysicsWorld,
         _balls: &UseStateHandle<Vec<Ball>>,
         pending_grow: &UseStateHandle<Option<(usize, f64)>>,
+        mouse_position: &UseStateHandle<Option<Position>>,
     ) {
         if let Some((grow_idx, start_time)) = **pending_grow {
             let now = web_sys::window()
@@ -113,7 +114,13 @@ pub fn use_physics_and_drag(container_ref: NodeRef) -> UsePhysicsAndDragHandle {
             let duration_f32 = duration as f32;
             let radius = min_radius + (max_radius - min_radius) * (duration_f32 / 2.0);
             world.set_ball_radius(grow_idx, radius);
-            // balls.setは呼ばない
+
+            // 生成中もマウス座標で速度記録
+            if let Some(active_index) = world.active_ball_index {
+                if let Some(pos) = (*mouse_position).as_ref() {
+                    world.track_drag_position(pos.x, pos.y);
+                }
+            }
         }
     }
 
@@ -122,14 +129,16 @@ pub fn use_physics_and_drag(container_ref: NodeRef) -> UsePhysicsAndDragHandle {
         let physics_world = physics_world.clone();
         let balls = balls.clone();
         let pending_grow = pending_grow.clone();
+        let mouse_position = mouse_position.clone();
         use_effect_with(pending_grow.clone(), move |pending_grow| {
             if pending_grow.is_some() {
                 let physics_world = physics_world.clone();
                 let balls = balls.clone();
                 let pending_grow = pending_grow.clone();
+                let mouse_position = mouse_position.clone();
                 let interval = gloo::timers::callback::Interval::new(16, move || {
                     let mut world = physics_world.borrow_mut();
-                    grow_ball(&mut world, &balls, &pending_grow);
+                    grow_ball(&mut world, &balls, &pending_grow, &mouse_position);
                 });
                 // Box化して返す
                 return Box::new(move || drop(interval)) as Box<dyn FnOnce()>;
@@ -180,7 +189,6 @@ pub fn use_physics_and_drag(container_ref: NodeRef) -> UsePhysicsAndDragHandle {
                     world.set_active_ball(Some(active_index));
                     // 掴んだballの位置を即時更新（既存仕様）
                     world.set_ball_position(active_index, x, y);
-                    world.track_drag_position(x, y);
 
                     let mut ball_data = (*balls).clone();
                     if ball_data.len() <= active_index {
@@ -234,20 +242,21 @@ pub fn use_physics_and_drag(container_ref: NodeRef) -> UsePhysicsAndDragHandle {
                     let x = e.client_x() - rect.left() as i32;
                     let y = e.client_y() - rect.top() as i32;
 
-                    mouse_position.set(Some(Position { x: e.client_x(), y: e.client_y() }));
+                    mouse_position.set(Some(Position { x, y }));
 
-                    // 1回だけborrow_mut
                     let mut world = physics_world.borrow_mut();
+                    // ここで必ずtrack_drag_positionを呼ぶ
+                    if let Some(active_index) = world.active_ball_index {
+                        world.track_drag_position(x, y);
+                    }
+
                     let mut update_balls = false;
                     if let Some(active_index) = world.active_ball_index {
                         world.set_ball_position(active_index, x, y);
-                        world.track_drag_position(x, y);
-
                         // Update current velocity display
                         if let Some(velocity) = world.velocity_tracker.calculate_velocity() {
                             current_velocity.set(Some(velocity));
                         }
-
                         update_balls = true;
                     }
 
@@ -284,7 +293,7 @@ pub fn use_physics_and_drag(container_ref: NodeRef) -> UsePhysicsAndDragHandle {
         Callback::from(move |_| {
             {
                 let mut world = physics_world.borrow_mut();
-                // Throw the ball with current velocity
+                // 生成中のボールも含めて、active_ball_indexがSomeなら必ず投げる
                 if let Some(active_index) = world.active_ball_index {
                     world.throw_ball(active_index);
                 }

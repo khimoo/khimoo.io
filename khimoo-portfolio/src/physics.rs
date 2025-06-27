@@ -146,7 +146,6 @@ impl PhysicsWorld {
                 let phys_x = screen_x as f32 / PIXELS_PER_METER;
                 let phys_y = screen_y as f32 / PIXELS_PER_METER;
                 ball.set_translation(vector![phys_x, phys_y], true);
-                ball.set_linvel(vector![0.0, 0.0], true);
             }
         }
     }
