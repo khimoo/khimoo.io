@@ -16,6 +16,18 @@ pub fn app() -> Html {
         <>
             <h1>{"Yew & Rapier2D Physics Simulation"}</h1>
 
+            <SimulationContainer
+                balls={(*physics_handle.balls).clone()}
+                on_mouse_down={physics_handle.on_mouse_down}
+                on_mouse_move={physics_handle.on_mouse_move}
+                on_mouse_up={physics_handle.on_mouse_up}
+                container_ref={container_ref}
+                show_debug_grid={(*physics_handle.show_debug_grid).clone()}
+                container_width={*physics_handle.container_width.clone()}
+                container_height={*physics_handle.container_height.clone()}
+                on_ball_context_menu={physics_handle.on_ball_context_menu.clone()}
+            />
+
             <CoordinatesDisplay
                 position={(*physics_handle.mouse_position).clone()}
                 container_bounds={(*container_bounds).clone()}
@@ -30,17 +42,6 @@ pub fn app() -> Html {
                 }}
             />
 
-            <SimulationContainer
-                balls={(*physics_handle.balls).clone()}
-                on_mouse_down={physics_handle.on_mouse_down}
-                on_mouse_move={physics_handle.on_mouse_move}
-                on_mouse_up={physics_handle.on_mouse_up}
-                container_ref={container_ref}
-                show_debug_grid={(*physics_handle.show_debug_grid).clone()}
-                container_width={*physics_handle.container_width.clone()}
-                container_height={*physics_handle.container_height.clone()}
-                on_ball_context_menu={physics_handle.on_ball_context_menu.clone()}
-            />
         </>
     }
-} 
+}

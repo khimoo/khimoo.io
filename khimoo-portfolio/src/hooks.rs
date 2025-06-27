@@ -210,7 +210,6 @@ pub fn use_physics_and_drag(container_ref: NodeRef) -> UsePhysicsAndDragHandle {
                         .unwrap_or(0.0);
                     let mut world = physics_world.borrow_mut();
                     world.set_dragging(true);
-                    world.velocity_tracker.clear(); // Clear tracker on new ball creation
                     let min_radius = 10.0f32;
                     let idx = world.add_ball(x, y, min_radius);
                     let mut new_balls = (*balls).clone();
@@ -312,7 +311,7 @@ pub fn use_physics_and_drag(container_ref: NodeRef) -> UsePhysicsAndDragHandle {
             is_dragging.set(false);
             mouse_position.set(None);
             current_velocity.set(None);
-            pending_grow_for_mouse_up.set(None); // Use cloned pending_grow
+            pending_grow_for_mouse_up.set(None);
         })
     };
 

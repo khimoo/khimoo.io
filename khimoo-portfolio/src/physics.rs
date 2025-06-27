@@ -224,7 +224,6 @@ impl PhysicsWorld {
                 ball_body.set_linvel(vector![physics_vx, physics_vy], true);
             }
         }
-        self.velocity_tracker.clear();
     }
 
     pub fn remove_ball(&mut self, index: usize) {
