@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 #[derive(PartialEq, Copy, Clone)]
 pub struct MousePosition {
     pub x: i32,
@@ -15,3 +17,5 @@ pub struct ContainerMeasure {
     pub bottom: i32,
     pub right: i32,
 }
+
+

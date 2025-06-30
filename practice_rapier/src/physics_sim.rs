@@ -1,5 +1,20 @@
 use rapier2d::prelude::*;
 
+pub struct PhysicsStepResources<'a> {
+    gravity: Vector<f32>,
+    integration_parameters: IntegrationParameters,
+    island_manager: IslandManager,
+    broad_phase: BroadPhase,
+    narrow_phase: NarrowPhase,
+    bodies: RigidBodySet,
+    colliders: ColliderSet,
+    impulse_joints: ImpulseJointSet,
+    multibody_joints: MultibodyJointSet,
+    ccd_solver: CCDSolver,
+    physics_hooks: Option<&'a dyn PhysicsHooks>,
+    event_handler: Option<&'a dyn EventHandler>,
+}
+
 #[hook]
 fn use_physics_step() {
     let mut rigid_body_set = RigidBodySet::new();
