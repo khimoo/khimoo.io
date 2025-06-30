@@ -99,7 +99,7 @@ pub fn simulation_container(props: &SimulationContainerProps) -> Html {
             onmousedown={props.on_mouse_down.clone()}
             onmousemove={props.on_mouse_move.clone()}
             onmouseup={props.on_mouse_up.clone()}
-            style="min-height: 100vh; background-color: #f0f0f0; border: 4px solid #333; margin: 10px; position: relative; box-shadow: inset 0 0 20px rgba(0,0,0,0.1);"
+            style="min-height: 100dvh; background-color: #f0f0f0; border: 4px solid #333; margin: 10px; position: relative; box-shadow: inset 0 0 20px rgba(0,0,0,0.1);"
         >
             if props.show_debug_grid {
                 <DebugGrid
@@ -237,4 +237,4 @@ pub fn debug_grid(props: &DebugGridProps) -> Html {
             </div>
         </div>
     }
-} 
+}

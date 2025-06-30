@@ -1,7 +1,10 @@
 [package]
-name = "practice_rapier"
+name = "khimoo-portfolio"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
 rapier2d = { version = "*", features = [ "simd-stable" ] }
+yew = { version = "0.21", features = ["csr"] }
+web-sys = { version = "0.3", features = ["HtmlDivElement", "Element", "DomRect"] }
+yew-hooks = {version = "0.3" }

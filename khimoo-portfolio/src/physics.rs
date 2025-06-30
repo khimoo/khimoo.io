@@ -24,6 +24,8 @@ pub struct PhysicsWorld {
     pub velocity_tracker: VelocityTracker,
     pub container_width: f32,
     pub container_height: f32,
+    enable_central_gravity: bool,
+    central_gravity_strength: f32,
 }
 
 impl PhysicsWorld {
@@ -48,6 +50,8 @@ impl PhysicsWorld {
             velocity_tracker: VelocityTracker::new(10),
             container_width: 0.0,
             container_height: 0.0,
+            enable_central_gravity: true,
+            central_gravity_strength: 0.81,
         }
     }
 
@@ -114,7 +118,39 @@ impl PhysicsWorld {
     }
 
     pub fn step(&mut self) -> Vec<Ball> {
-        let gravity = vector![0.0, 9.81];
+        // 重力を無効にする（または弱くする）
+        let gravity = vector![0.0, 0.0]; // 通常の重力を無効化
+
+        // 画面中央の座標を計算
+        let center_screen_x = self.container_width / 2.0;
+        let center_screen_y = self.container_height / 2.0;
+        let (center_physics_x, center_physics_y) = self.screen_to_physics(center_screen_x, center_screen_y);
+
+        // 各ボールに中央向きの力を適用
+        if self.enable_central_gravity {
+            for handle in &self.ball_handles {
+                if let Some(ball_body) = self.rigid_body_set.get_mut(*handle) {
+                    let ball_pos = *ball_body.translation();
+
+                    // 中央への方向ベクトルを計算
+                    let dx = center_physics_x - ball_pos.x;
+                    let dy = center_physics_y - ball_pos.y;
+                    let distance = (dx * dx + dy * dy).sqrt();
+
+                    // 距離が0に近い場合は力を適用しない（ゼロ除算回避）
+                    if distance > 0.001 {
+                        // 正規化された方向ベクトル
+                        let force_x = (dx / distance) * self.central_gravity_strength;
+                        let force_y = (dy / distance) * self.central_gravity_strength;
+
+                        // 質量を取得して力を適用
+                        let mass = ball_body.mass();
+                        ball_body.add_force(vector![force_x * mass, force_y * mass], true);
+                    }
+                }
+            }
+        }
+
         let integration_parameters = IntegrationParameters::default();
         self.physics_pipeline.step(
             &gravity,
@@ -132,18 +168,18 @@ impl PhysicsWorld {
             &(),
         );
 
+        // 以下は既存のコードと同じ
         let mut balls_data = Vec::new();
         let container_width = self.container_width;
         let container_height = self.container_height;
         for (i, handle) in self.ball_handles.iter().enumerate() {
-            // ball_bodyを可変借用する前に必要な値をコピー
             let current_physics_translation = if let Some(ball_body) = self.rigid_body_set.get(*handle) {
                 *ball_body.translation()
             } else {
-                continue; // ボールが見つからない場合はスキップ
+                continue;
             };
 
-            let radius = self.ball_radii[i]; // radiusをここで定義
+            let radius = self.ball_radii[i];
             let (x, y) = self.physics_to_screen(current_physics_translation.x, current_physics_translation.y);
 
             let mut new_x = x;
