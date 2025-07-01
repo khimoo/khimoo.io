@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 #[derive(PartialEq, Copy, Clone)]
 pub struct MousePosition {
     pub x: i32,
@@ -18,4 +16,20 @@ pub struct ContainerMeasure {
     pub right: i32,
 }
 
+
+pub type NodeId = u32;
+
+#[derive(Clone)]
+pub struct NodePosition {
+    pub x: i32,
+    pub y: i32,
+}
+
+#[derive(Clone)]
+pub struct Node {
+    pub id: NodeId,
+    pub pos: NodePosition,
+}
+
+pub type Nodes = Vec<Node>;
 

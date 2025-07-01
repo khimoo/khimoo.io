@@ -15,7 +15,6 @@ pub fn app() -> Html {
     html! {
         <>
             <h1>{"Yew & Rapier2D Physics Simulation"}</h1>
-
             <SimulationContainer
                 balls={(*physics_handle.balls).clone()}
                 on_mouse_down={physics_handle.on_mouse_down}
@@ -40,7 +39,6 @@ pub fn app() -> Html {
                     })
                 }}
             />
-
         </>
     }
 }
