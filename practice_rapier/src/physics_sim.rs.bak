@@ -45,7 +45,7 @@ impl PhysicsWorld {
         }
 
         Self {
-            gravity: vector![0.0, 0.0], // y-down gravity
+            gravity: vector![0.0, 98.1], // y-down gravity
             integration_parameters: IntegrationParameters::default(),
             island_manager: IslandManager::new(),
             broad_phase: DefaultBroadPhase::new(),
@@ -82,7 +82,8 @@ impl PhysicsWorld {
             &event_handler,
         );
     }
-pub fn get_nodes(&self) -> Nodes {
+
+    pub fn get_nodes(&self) -> Nodes {
         self.body_map
             .iter()
             .map(|(id, handle)| {
@@ -93,13 +94,5 @@ pub fn get_nodes(&self) -> Nodes {
                 }
             })
             .collect()
-    }
-
-    pub fn set_node_position(&mut self, id: NodeId, pos: &NodePosition) {
-        if let Some(handle) = self.body_map.get(&id) {
-            if let Some(body) = self.bodies.get_mut(*handle) {
-                body.set_position(screen_to_physics(pos), true);
-            }
-        }
     }
 }
