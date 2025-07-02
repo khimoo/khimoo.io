@@ -1,7 +1,20 @@
 use rapier2d::prelude::*;
-use crate::types::{ Node, NodePosition, Nodes };
+use crate::types::{Node, NodeId, NodePosition, Nodes};
+use std::collections::HashMap;
 
-pub struct PhysicsStepResources<'a> {
+// Web座標(i32)と物理座標(f32)の変換
+fn screen_to_physics(pos: &NodePosition) -> Isometry<f32> {
+    Isometry::new(vector![pos.x as f32, pos.y as f32], 0.0)
+}
+
+fn physics_to_screen(isometry: &Isometry<f32>) -> NodePosition {
+    NodePosition {
+        x: isometry.translation.x.round() as i32,
+        y: isometry.translation.y.round() as i32,
+    }
+}
+
+pub struct PhysicsWorld {
     gravity: Vector<f32>,
     integration_parameters: IntegrationParameters,
     island_manager: IslandManager,
@@ -12,34 +25,74 @@ pub struct PhysicsStepResources<'a> {
     impulse_joints: ImpulseJointSet,
     multibody_joints: MultibodyJointSet,
     ccd_solver: CCDSolver,
-    physics_hooks: Option<&'a dyn PhysicsHooks>,
-    event_handler: Option<&'a dyn EventHandler>,
+    body_map: HashMap<NodeId, RigidBodyHandle>,
 }
 
-impl<'a> PhysicsStepResources<'a> {
-    pub fn new(
-        physics_hooks: Option<&'a dyn PhysicsHooks>,
-        event_handler: Option<&'a dyn EventHandler>,
-    ) -> Self {
+impl PhysicsWorld {
+    pub fn new(initial_nodes: &Nodes) -> Self {
+        let mut bodies = RigidBodySet::new();
+        let mut colliders = ColliderSet::new();
+        let mut body_map = HashMap::new();
+
+        for node in initial_nodes {
+            let rigid_body = RigidBodyBuilder::dynamic()
+                .position(screen_to_physics(&node.pos))
+                .build();
+            let collider = ColliderBuilder::ball(25.0).restitution(0.7).build();
+            let handle = bodies.insert(rigid_body);
+            colliders.insert_with_parent(collider, handle, &mut bodies);
+            body_map.insert(node.id, handle);
+        }
+
         Self {
-            gravity: vector![0.0, 0.0],
+            gravity: vector![0.0, 98.1], // y-down gravity
             integration_parameters: IntegrationParameters::default(),
             island_manager: IslandManager::new(),
             broad_phase: DefaultBroadPhase::new(),
             narrow_phase: NarrowPhase::new(),
-            bodies: RigidBodySet::new(),
-            colliders: ColliderSet::new(),
+            bodies,
+            colliders,
             impulse_joints: ImpulseJointSet::new(),
             multibody_joints: MultibodyJointSet::new(),
             ccd_solver: CCDSolver::new(),
-            physics_hooks,
-            event_handler,
+            body_map,
         }
     }
-    pub fn physics_step() -> Nodes {
-        let mut nodes = Nodes::new();
-        nodes.insert(0, Node{ id: 0, pos: {NodePosition{x:100, y:150}}});
-        nodes.insert(1, Node{ id: 1, pos: {NodePosition{x:300, y:250}}});
-        nodes
+
+    pub fn step(&mut self) {
+        let physics_hooks = ();
+        let event_handler = ();
+
+        self.integration_parameters.dt = 1.0 / 60.0; // Simulate 60Hz
+
+        let mut pipeline = PhysicsPipeline::new();
+        pipeline.step(
+            &self.gravity,
+            &self.integration_parameters,
+            &mut self.island_manager,
+            &mut self.broad_phase,
+            &mut self.narrow_phase,
+            &mut self.bodies,
+            &mut self.colliders,
+            &mut self.impulse_joints,
+            &mut self.multibody_joints,
+            &mut self.ccd_solver,
+            None,
+            &physics_hooks,
+            &event_handler,
+        );
+    }
+
+    pub fn get_nodes(&self) -> Nodes {
+        self.body_map
+            .iter()
+            .map(|(id, handle)| {
+                let body = &self.bodies[*handle];
+                Node {
+                    id: *id,
+                    pos: physics_to_screen(body.position()),
+                }
+            })
+            .collect()
     }
 }

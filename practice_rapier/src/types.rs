@@ -19,17 +19,16 @@ pub struct ContainerMeasure {
 
 pub type NodeId = u32;
 
-#[derive(Clone)]
+#[derive(Clone, Copy, Default, PartialEq)]
 pub struct NodePosition {
     pub x: i32,
     pub y: i32,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy, PartialEq)]
 pub struct Node {
     pub id: NodeId,
     pub pos: NodePosition,
 }
 
 pub type Nodes = Vec<Node>;
-
