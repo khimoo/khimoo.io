@@ -12,7 +12,7 @@ pub fn app() -> Html {
     // use_intervalで時間経過見れる
 
     html! {
-        <div>
+        <div style="position: static;">
             <Interval/>
             <NodeGraphContainer
                 container_ref={container_ref}

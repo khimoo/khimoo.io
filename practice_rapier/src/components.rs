@@ -1,4 +1,3 @@
-use _NodeGraphContainerProps::container_measure;
 use yew::prelude::{ function_component, Properties, Html, html, NodeRef, use_state, Callback, MouseEvent };
 use crate::types::{MousePosition, ContainerMeasure, Nodes, Node, NodePosition, NodeId};
 use crate::physics_sim::{ PhysicsWorld };
@@ -80,16 +79,16 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
     }
     html! {
         <>
-            <div onmousemove={on_mouse_move} onmouseup={on_mouse_up}>
-                <h1>{"node_graph"}</h1>
-                <p>{ format!("({},{})", mouse_position_handle.x, mouse_position_handle.y)}</p>
-                <p>{ format!("({},{})", mouse_position_handle.x + (scroll_handle.0 as i32), mouse_position_handle.y + (scroll_handle.1 as i32))}</p>
-                <p>{ format!("({},{})", scroll_handle.0, scroll_handle.1)}</p>
-                <p>{ format!("{:?}", props.container_measure)}</p>
+            <div style="position: relative;"  onmousemove={on_mouse_move} onmouseup={on_mouse_up}>
                 <div
-                    style="position: absolute; width: 100vw; height: 100vh; background: #f0f0f0;"
+                    style="position: absolute;top:0;left:0; width: 100vw; height: 100vh; background: #f0f0f0;"
                     ref={props.container_ref.clone()}
                 >
+                    <h1>{"node_graph"}</h1>
+                    <p>{ format!("({},{})", mouse_position_handle.x, mouse_position_handle.y)}</p>
+                    <p>{ format!("({},{})", mouse_position_handle.x + (scroll_handle.0 as i32), mouse_position_handle.y + (scroll_handle.1 as i32))}</p>
+                    <p>{ format!("({},{})", scroll_handle.0, scroll_handle.1)}</p>
+                    <p>{ format!("{:?}", props.container_measure)}</p>
                     {
                         nodes_handle.iter().map(|node| {
                             let on_mouse_down = {
@@ -104,7 +103,7 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
                                 <div key={node.id.to_string()}
                                     onmousedown={on_mouse_down}
                                     style={
-                                        format!("position: absolute;
+                                        format!("position: relative;
                                          width: 50px;
                                          height: 50px;
                                          background-color: black;
