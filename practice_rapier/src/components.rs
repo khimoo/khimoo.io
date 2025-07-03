@@ -1,7 +1,8 @@
+use _NodeGraphContainerProps::container_measure;
 use yew::prelude::{ function_component, Properties, Html, html, NodeRef, use_state, Callback, MouseEvent };
 use crate::types::{MousePosition, ContainerMeasure, Nodes, Node, NodePosition, NodeId};
 use crate::physics_sim::{ PhysicsWorld };
-use yew_hooks::use_interval;
+use yew_hooks::{ use_interval, use_window_scroll };
 use std::rc::Rc;
 use std::cell::RefCell;
 
@@ -15,6 +16,7 @@ pub struct NodeGraphContainerProps {
 #[function_component(NodeGraphContainer)]
 pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
     let mouse_position_handle = use_state(|| MousePosition{x:0,y:0});
+    let scroll_handle = use_window_scroll();
     let dragged_node_id = use_state(|| None::<NodeId>);
 
     let initial_nodes = vec![
@@ -29,6 +31,8 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
 
     let on_mouse_move = {
         let mouse_position_handle = mouse_position_handle.clone();
+        let scroll_handle = scroll_handle.clone();
+        let container_top = props.container_measure.top.clone();
         let dragged_node_id = dragged_node_id.clone();
         let physics_world = physics_world.clone();
         Callback::from(move |e: MouseEvent| {
@@ -36,21 +40,27 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
             mouse_position_handle.set(pos.clone());
             if let Some(id) = *dragged_node_id {
                 let mut world = physics_world.borrow_mut();
-                world.set_node_position(id, &NodePosition { x: pos.x, y: pos.y });
+                world.set_node_position(id, &NodePosition { x: pos.x - container_top + scroll_handle.0 as i32 , y: pos.y + scroll_handle.1 as i32  });
             }
         })
     };
 
     let on_mouse_down = {
         let dragged_node_id = dragged_node_id.clone();
+        let physics_world = physics_world.clone();
         Callback::from(move |id: NodeId| {
+            physics_world.borrow_mut().set_node_kinematic(id);
             dragged_node_id.set(Some(id));
         })
     };
 
     let on_mouse_up = {
         let dragged_node_id = dragged_node_id.clone();
+        let physics_world = physics_world.clone();
         Callback::from(move |_: MouseEvent| {
+            if let Some(id) = *dragged_node_id {
+                physics_world.borrow_mut().set_node_dynamic(id);
+            }
             dragged_node_id.set(None);
         })
     };
@@ -61,11 +71,11 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
         let physics_world = physics_world.clone();
         let dragged_node_id = dragged_node_id.clone();
         use_interval(move || {
+            let mut world = physics_world.borrow_mut();
             if dragged_node_id.is_none() {
-                let mut world = physics_world.borrow_mut();
                 world.step();
-                nodes_handle.set(world.get_nodes());
             }
+            nodes_handle.set(world.get_nodes());
         }, 16); // ~60fps
     }
     html! {
@@ -73,9 +83,11 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
             <div onmousemove={on_mouse_move} onmouseup={on_mouse_up}>
                 <h1>{"node_graph"}</h1>
                 <p>{ format!("({},{})", mouse_position_handle.x, mouse_position_handle.y)}</p>
-                <p>{ format!("{}", props.container_measure.width)}</p>
+                <p>{ format!("({},{})", mouse_position_handle.x + (scroll_handle.0 as i32), mouse_position_handle.y + (scroll_handle.1 as i32))}</p>
+                <p>{ format!("({},{})", scroll_handle.0, scroll_handle.1)}</p>
+                <p>{ format!("{:?}", props.container_measure)}</p>
                 <div
-                    style="position: relative; width: 100vw; height: 100vh; background: #f0f0f0;"
+                    style="position: absolute; width: 100vw; height: 100vh; background: #f0f0f0;"
                     ref={props.container_ref.clone()}
                 >
                     {

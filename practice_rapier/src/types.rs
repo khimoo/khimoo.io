@@ -4,7 +4,7 @@ pub struct MousePosition {
     pub y: i32,
 }
 
-#[derive(Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct ContainerMeasure {
     pub x: i32,
     pub y: i32,
@@ -15,6 +15,12 @@ pub struct ContainerMeasure {
     pub bottom: i32,
     pub right: i32,
 }
+
+//pub impl ContainerMeasure {
+//    pub fn mouse_pos_on_container() -> MousePosition {
+//        ()
+//    }
+//}
 
 
 pub type NodeId = u32;

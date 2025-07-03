@@ -21,6 +21,11 @@ pub fn app() -> Html {
                         x: container_measure_handle.x as i32,
                         y: container_measure_handle.y as i32,
                         width: container_measure_handle.width as i32,
+                        height: container_measure_handle.height as i32,
+                        top: container_measure_handle.top as i32,
+                        left: container_measure_handle.left as i32,
+                        bottom: container_measure_handle.bottom as i32,
+                        right: container_measure_handle.right as i32,
                         ..Default::default()
                     }
                 }

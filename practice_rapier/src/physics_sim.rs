@@ -82,7 +82,7 @@ impl PhysicsWorld {
             &event_handler,
         );
     }
-pub fn get_nodes(&self) -> Nodes {
+    pub fn get_nodes(&self) -> Nodes {
         self.body_map
             .iter()
             .map(|(id, handle)| {
@@ -99,6 +99,22 @@ pub fn get_nodes(&self) -> Nodes {
         if let Some(handle) = self.body_map.get(&id) {
             if let Some(body) = self.bodies.get_mut(*handle) {
                 body.set_position(screen_to_physics(pos), true);
+            }
+        }
+    }
+
+    pub fn set_node_kinematic(&mut self, id: NodeId) {
+        if let Some(handle) = self.body_map.get(&id) {
+            if let Some(body) = self.bodies.get_mut(*handle) {
+                body.set_body_type(RigidBodyType::KinematicPositionBased, true);
+            }
+        }
+    }
+
+    pub fn set_node_dynamic(&mut self, id: NodeId) {
+        if let Some(handle) = self.body_map.get(&id) {
+            if let Some(body) = self.bodies.get_mut(*handle) {
+                body.set_body_type(RigidBodyType::Dynamic, true);
             }
         }
     }
