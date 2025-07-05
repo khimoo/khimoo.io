@@ -1,5 +1,5 @@
 use yew::prelude::{Html, html, function_component, use_node_ref, use_state, Callback, MouseEvent};
-use yew_hooks::use_measure;
+use yew_hooks::{use_effect_update_with_deps, use_measure};
 use crate::components::{NodeGraphContainer, Interval};
 use crate::types::{MousePosition, ContainerMeasure};
 
@@ -7,7 +7,6 @@ use crate::types::{MousePosition, ContainerMeasure};
 pub fn app() -> Html {
     let container_ref = use_node_ref();
     let container_measure_handle = use_measure(container_ref.clone());
-
 
     // use_intervalで時間経過見れる
 

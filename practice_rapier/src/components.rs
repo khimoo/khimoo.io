@@ -1,9 +1,10 @@
 use yew::prelude::{ function_component, Properties, Html, html, NodeRef, use_state, Callback, MouseEvent };
 use crate::types::{MousePosition, ContainerMeasure, Nodes, Node, NodePosition, NodeId};
 use crate::physics_sim::{ PhysicsWorld };
-use yew_hooks::{ use_interval, use_window_scroll };
+use yew_hooks::{ use_interval, use_window_scroll,use_effect_update_with_deps };
 use std::rc::Rc;
 use std::cell::RefCell;
+use web_sys::{console, HtmlElement };
 
 
 #[derive(Properties, PartialEq)]
@@ -27,6 +28,27 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
     let physics_world = use_state(|| {
         Rc::new(RefCell::new(PhysicsWorld::new(&initial_nodes)))
     });
+
+    let container_pos = use_state(|| MousePosition { x: 0, y: 0 });
+    {
+        let node_ref = props.container_ref.clone();
+        let container_pos = container_pos.clone();
+        let measure = props.container_measure.clone();
+
+        use_effect_update_with_deps(
+            move |_| {
+                if let Some(element) = node_ref.cast::<HtmlElement>() {
+                    let rect = element.get_bounding_client_rect();
+                    container_pos.set(MousePosition {
+                        x: rect.x() as i32,
+                        y: rect.y() as i32,
+                    });
+                }
+                || {}
+            },
+            measure
+        );
+    }
 
     let on_mouse_move = {
         let mouse_position_handle = mouse_position_handle.clone();
@@ -79,15 +101,18 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
     }
     html! {
         <>
-            <div style="position: relative;"  onmousemove={on_mouse_move} onmouseup={on_mouse_up}>
+            <div
+            style="position: relative;"  onmousemove={on_mouse_move} onmouseup={on_mouse_up}
+            >
                 <div
-                    style="position: absolute;top:0;left:0; width: 100vw; height: 100vh; background: #f0f0f0;"
+                    style="position: static; width: 100vw; height: 100vh; background: #f0f0f0;"
                     ref={props.container_ref.clone()}
                 >
                     <h1>{"node_graph"}</h1>
                     <p>{ format!("({},{})", mouse_position_handle.x, mouse_position_handle.y)}</p>
                     <p>{ format!("({},{})", mouse_position_handle.x + (scroll_handle.0 as i32), mouse_position_handle.y + (scroll_handle.1 as i32))}</p>
                     <p>{ format!("({},{})", scroll_handle.0, scroll_handle.1)}</p>
+                    <p>{ format!("container pos: ({}, {})", container_pos.x, container_pos.y) }</p>
                     <p>{ format!("{:?}", props.container_measure)}</p>
                     {
                         nodes_handle.iter().map(|node| {

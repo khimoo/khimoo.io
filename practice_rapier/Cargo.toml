@@ -6,5 +6,5 @@ edition = "2024"
 [dependencies]
 rapier2d = { version = "*", features = [ "simd-stable" ] }
 yew = { version = "0.21", features = ["csr"] }
-web-sys = { version = "0.3", features = ["HtmlDivElement", "Element", "DomRect"] }
+web-sys = { version = "0.3", features = ["HtmlElement", "HtmlDivElement", "Element", "DomRect"] }
 yew-hooks = {version = "0.3" }
