@@ -62,10 +62,12 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
         })
     };
 
+    let physics_zero = use_state(|| NodePosition::default());
 
     {
         let nodes_handle = nodes_handle.clone();
         let physics_world = physics_world.clone();
+        let physics_zero = physics_zero.clone();
         let dragged_node_id = dragged_node_id.clone();
         use_interval(move || {
             let mut world = physics_world.borrow_mut();
@@ -73,6 +75,7 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
                 world.step();
             }
             nodes_handle.set(world.get_nodes());
+            physics_zero.set(world.get_zero());
         }, 16); // ~60fps
     }
     html! {
@@ -101,7 +104,7 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
                                 <div key={node.id.to_string()}
                                     onmousedown={on_mouse_down}
                                     style={
-                                        format!("position: relative;
+                                        format!("position: absolute;
                                          width: 50px;
                                          height: 50px;
                                          background-color: black;
@@ -117,6 +120,15 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
                             }
                         }).collect::<Html>()
                     }
+                    <div style={
+                        format!("position: absolute;
+                        left: {}px;
+                        top: {}px;
+                        background-color: black;
+                        transform: translate(-50%, -50%);
+                        width: 10px;
+                        height: 10px;
+                        border-radius: 50%;", physics_zero.x, physics_zero.y)}></div>
                 </div>
             </div>
         </>

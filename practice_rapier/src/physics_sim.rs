@@ -94,6 +94,9 @@ impl PhysicsWorld {
             })
             .collect()
     }
+    pub fn get_zero(&self) -> NodePosition {
+        physics_to_screen(&Isometry::new(vector![0 as f32,0 as f32], 0.0))
+    }
 
     pub fn set_node_position(&mut self, id: NodeId, pos: &NodePosition) {
         if let Some(handle) = self.body_map.get(&id) {
