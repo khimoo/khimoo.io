@@ -1,11 +1,11 @@
-#[derive(PartialEq, Copy, Clone)]
-pub struct MousePosition {
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct Position {
     pub x: i32,
     pub y: i32,
 }
 
 #[derive(Debug, Default, Clone, PartialEq)]
-pub struct ContainerMeasure {
+pub struct ContainerBound {
     pub x: i32,
     pub y: i32,
     pub width: i32,
@@ -15,13 +15,6 @@ pub struct ContainerMeasure {
     pub bottom: i32,
     pub right: i32,
 }
-
-//pub impl ContainerMeasure {
-//    pub fn mouse_pos_on_container() -> MousePosition {
-//        ()
-//    }
-//}
-
 
 pub type NodeId = u32;
 

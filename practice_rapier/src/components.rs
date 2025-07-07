@@ -1,22 +1,23 @@
 use yew::prelude::{ function_component, Properties, Html, html, NodeRef, use_state, Callback, MouseEvent };
-use crate::types::{MousePosition, ContainerMeasure, Nodes, Node, NodePosition, NodeId};
+use crate::types::{Position, ContainerBound, Nodes, Node, NodePosition, NodeId};
 use crate::physics_sim::{ PhysicsWorld };
-use yew_hooks::{ use_interval, use_window_scroll,use_effect_update_with_deps };
+use yew_hooks::{ use_interval, use_window_scroll,use_effect_update_with_deps, UseMeasureState };
 use std::rc::Rc;
 use std::cell::RefCell;
-use web_sys::{console, HtmlElement };
 
 
 #[derive(Properties, PartialEq)]
 pub struct NodeGraphContainerProps {
     pub container_ref: NodeRef,
-    pub container_measure: ContainerMeasure,
+    pub container_measure: UseMeasureState,
+    pub container_bound: ContainerBound,
+    pub window_mouse_pos: Position,
+    pub global_mouse_pos: Position,
+    pub window_scroll: Position,
 }
 
 #[function_component(NodeGraphContainer)]
 pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
-    let mouse_position_handle = use_state(|| MousePosition{x:0,y:0});
-    let scroll_handle = use_window_scroll();
     let dragged_node_id = use_state(|| None::<NodeId>);
 
     let initial_nodes = vec![
@@ -29,39 +30,14 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
         Rc::new(RefCell::new(PhysicsWorld::new(&initial_nodes)))
     });
 
-    let container_pos = use_state(|| MousePosition { x: 0, y: 0 });
-    {
-        let node_ref = props.container_ref.clone();
-        let container_pos = container_pos.clone();
-        let measure = props.container_measure.clone();
-
-        use_effect_update_with_deps(
-            move |_| {
-                if let Some(element) = node_ref.cast::<HtmlElement>() {
-                    let rect = element.get_bounding_client_rect();
-                    container_pos.set(MousePosition {
-                        x: rect.x() as i32,
-                        y: rect.y() as i32,
-                    });
-                }
-                || {}
-            },
-            measure
-        );
-    }
-
     let on_mouse_move = {
-        let mouse_position_handle = mouse_position_handle.clone();
-        let scroll_handle = scroll_handle.clone();
-        let container_top = props.container_measure.top.clone();
+        let global_mouse_pos = props.global_mouse_pos.clone();
         let dragged_node_id = dragged_node_id.clone();
         let physics_world = physics_world.clone();
-        Callback::from(move |e: MouseEvent| {
-            let pos = MousePosition { x: e.client_x(), y: e.client_y() };
-            mouse_position_handle.set(pos.clone());
+        Callback::from(move |_| {
             if let Some(id) = *dragged_node_id {
                 let mut world = physics_world.borrow_mut();
-                world.set_node_position(id, &NodePosition { x: pos.x - container_top + scroll_handle.0 as i32 , y: pos.y + scroll_handle.1 as i32  });
+                world.set_node_position(id, &NodePosition { x: global_mouse_pos.x as i32 , y: global_mouse_pos.y  as i32  });
             }
         })
     };
@@ -109,11 +85,8 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
                     ref={props.container_ref.clone()}
                 >
                     <h1>{"node_graph"}</h1>
-                    <p>{ format!("({},{})", mouse_position_handle.x, mouse_position_handle.y)}</p>
-                    <p>{ format!("({},{})", mouse_position_handle.x + (scroll_handle.0 as i32), mouse_position_handle.y + (scroll_handle.1 as i32))}</p>
-                    <p>{ format!("({},{})", scroll_handle.0, scroll_handle.1)}</p>
-                    <p>{ format!("container pos: ({}, {})", container_pos.x, container_pos.y) }</p>
-                    <p>{ format!("{:?}", props.container_measure)}</p>
+                    <p>{ format!("global_mouse_pos({},{})", props.global_mouse_pos.x,props.global_mouse_pos.y)}</p>
+                    <p>{ format!("{:?}", props.container_bound)}</p>
                     {
                         nodes_handle.iter().map(|node| {
                             let on_mouse_down = {
