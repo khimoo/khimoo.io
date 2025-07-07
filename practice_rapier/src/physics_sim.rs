@@ -1,8 +1,7 @@
-use rapier2d::prelude::*;
 use crate::types::{Node, NodeId, NodePosition, Nodes};
+use rapier2d::prelude::*;
 use std::collections::HashMap;
 
-// Web座標(i32)と物理座標(f32)の変換
 fn screen_to_physics(pos: &NodePosition) -> Isometry<f32> {
     Isometry::new(vector![pos.x as f32, pos.y as f32], 0.0)
 }
@@ -38,7 +37,9 @@ impl PhysicsWorld {
             let rigid_body = RigidBodyBuilder::dynamic()
                 .position(screen_to_physics(&node.pos))
                 .build();
-            let collider = ColliderBuilder::ball(25.0).restitution(0.7).build();
+            let collider = ColliderBuilder::ball(node.radius as f32)
+                .restitution(0.7)
+                .build();
             let handle = bodies.insert(rigid_body);
             colliders.insert_with_parent(collider, handle, &mut bodies);
             body_map.insert(node.id, handle);
@@ -82,20 +83,30 @@ impl PhysicsWorld {
             &event_handler,
         );
     }
+
     pub fn get_nodes(&self) -> Nodes {
         self.body_map
             .iter()
-            .map(|(id, handle)| {
+            .filter_map(|(id, handle)| {
                 let body = &self.bodies[*handle];
-                Node {
+                let coll_handles = body.colliders();
+                let coll_handle = coll_handles.get(0)?;
+                let collider = &self.colliders[*coll_handle];
+                let ball = collider.shape().as_ball()?;
+
+                // フィールドアクセスに変更：`ball.radius`
+                let radius = ball.radius.round() as i32;
+
+                Some(Node {
                     id: *id,
                     pos: physics_to_screen(body.position()),
-                }
+                    radius,
+                })
             })
             .collect()
     }
     pub fn get_zero(&self) -> NodePosition {
-        physics_to_screen(&Isometry::new(vector![0 as f32,0 as f32], 0.0))
+        physics_to_screen(&Isometry::new(vector![0 as f32, 0 as f32], 0.0))
     }
 
     pub fn set_node_position(&mut self, id: NodeId, pos: &NodePosition) {

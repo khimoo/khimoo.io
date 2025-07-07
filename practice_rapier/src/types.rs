@@ -28,6 +28,7 @@ pub struct NodePosition {
 pub struct Node {
     pub id: NodeId,
     pub pos: NodePosition,
+    pub radius: i32,
 }
 
 pub type Nodes = Vec<Node>;
