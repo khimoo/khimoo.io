@@ -1,4 +1,4 @@
-use crate::types::{Node, NodeId, NodePosition, Nodes};
+use crate::types::{Node, NodeId, NodePosition, Nodes, Position};
 use rapier2d::prelude::*;
 use std::collections::HashMap;
 
@@ -60,11 +60,71 @@ impl PhysicsWorld {
         }
     }
 
+    pub fn add_gravity_forces(&mut self, center_pos: Position) {
+        let ids: Vec<_> = self.body_map.keys().cloned().collect();
+        for i in 0..ids.len() {
+            let id_a = ids[i];
+            let handle = self.body_map[&id_a];
+            let body = &self.bodies[handle];
+
+            let pos = body.position().translation.vector;
+        }
+    }
+
+
+    pub fn add_electric_forces(&mut self) {
+        // すべてのノードの組み合わせを調べる
+        let ids: Vec<_> = self.body_map.keys().cloned().collect();
+        for i in 0..ids.len() {
+            for j in (i + 1)..ids.len() {
+                let id_a = ids[i];
+                let id_b = ids[j];
+                let handle_a = self.body_map[&id_a];
+                let handle_b = self.body_map[&id_b];
+                let body_a = &self.bodies[handle_a];
+                let body_b = &self.bodies[handle_b];
+
+                // 位置ベクトル
+                let pos_a = body_a.position().translation.vector;
+                let pos_b = body_b.position().translation.vector;
+                let delta = pos_b - pos_a;
+                let dist = delta.norm();
+
+                //// 距離によって力を決定
+                //let force = if dist < 50.0 {
+                //    // 近すぎる場合は反発
+                //    100000.0 / (dist * dist + 1.0)
+                //} else if dist > 200.0 {
+                //    // 遠すぎる場合は引力
+                //    -5000000.0 / (dist * dist + 1.0)
+                //} else {
+                //    0.0
+                //};
+                let force = -5000000.0 / (dist * dist + 1.0);
+
+                // 力の方向
+                let dir = if dist > 0.0 { delta.normalize() } else { vector![0.0, 0.0] };
+                let force_vec = dir * force;
+
+                // それぞれのボディに力を加える（反対方向に同じ大きさ）
+                if let Some(body_a_mut) = self.bodies.get_mut(handle_a) {
+                    body_a_mut.add_force(-force_vec, true);
+                }
+                if let Some(body_b_mut) = self.bodies.get_mut(handle_b) {
+                    body_b_mut.add_force(force_vec, true);
+                }
+            }
+        }
+    }
+
+
     pub fn step(&mut self) {
         let physics_hooks = ();
         let event_handler = ();
 
         self.integration_parameters.dt = 1.0 / 60.0; // Simulate 60Hz
+
+        self.add_electric_forces();
 
         let mut pipeline = PhysicsPipeline::new();
         pipeline.step(
