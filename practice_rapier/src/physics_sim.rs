@@ -66,6 +66,18 @@ impl PhysicsWorld {
 
         self.integration_parameters.dt = 1.0 / 60.0; // Simulate 60Hz
 
+        for handle in self.body_map.values() {
+            if let Some(body) = self.bodies.get_mut(*handle) {
+                if body.is_dynamic() {
+                    let trans = body.translation();
+                    let translation = 10000.0 * vector![trans.x, trans.y];
+                    let force = -translation;
+                    body.reset_forces(true);
+                    body.add_force(force, true);
+                }
+            }
+        }
+
         let mut pipeline = PhysicsPipeline::new();
         pipeline.step(
             &self.gravity,
