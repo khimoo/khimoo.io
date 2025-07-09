@@ -62,7 +62,7 @@ impl PhysicsWorld {
             let joint_params = SpringJointBuilder::new(
                 0.0,     // 自然長 (rest_length)
                 1000000.0,  // バネ定数 (stiffness)
-                100000.0    // 減衰係数 (damping)
+                300000.0    // 減衰係数 (damping)
             )
             .local_anchor1(point![0.0, 0.0])  // アンカー側の接続点
             .local_anchor2(point![0.0, 0.0])  // ノード側の接続点

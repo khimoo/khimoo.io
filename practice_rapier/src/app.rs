@@ -1,7 +1,7 @@
 use web_sys::HtmlElement;
 use yew::prelude::{Html, html, function_component, use_node_ref, use_state, Callback, MouseEvent};
 use yew_hooks::{use_effect_update_with_deps, use_measure, use_window_scroll};
-use crate::components::{NodeGraphContainer, Interval};
+use crate::components::{NodeGraphContainer};
 use crate::types::{Position, ContainerBound};
 
 #[function_component(App)]
@@ -42,7 +42,6 @@ pub fn app() -> Html {
 
     html! {
         <div onmousemove={on_mouse_move}>
-            <Interval/>
             // Globalな視点でのmouseの座標、スクロール量、要素の座標を渡すぞ！
             <NodeGraphContainer
                 container_ref={container_ref}

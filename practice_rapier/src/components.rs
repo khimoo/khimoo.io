@@ -59,7 +59,7 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
         let dragged_node_id = dragged_node_id.clone();
         let physics_world = physics_world.clone();
         Callback::from(move |id: NodeId| {
-            // physics_world.borrow_mut().set_node_kinematic(id);
+            physics_world.borrow_mut().set_node_kinematic(id);
             dragged_node_id.set(Some(id));
         })
     };
@@ -68,9 +68,9 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
         let dragged_node_id = dragged_node_id.clone();
         let physics_world = physics_world.clone();
         Callback::from(move |_: MouseEvent| {
-            // if let Some(id) = *dragged_node_id {
-            //     physics_world.borrow_mut().set_node_dynamic(id);
-            // }
+            if let Some(id) = *dragged_node_id {
+                physics_world.borrow_mut().set_node_dynamic(id);
+            }
             dragged_node_id.set(None);
         })
     };
@@ -81,13 +81,10 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
         let nodes_handle = nodes_handle.clone();
         let physics_world = physics_world.clone();
         let physics_zero = physics_zero.clone();
-        let dragged_node_id = dragged_node_id.clone();
         use_interval(
             move || {
                 let mut world = physics_world.borrow_mut();
-                if dragged_node_id.is_none() {
-                    world.step();
-                }
+                world.step();
                 nodes_handle.set(world.get_nodes());
                 physics_zero.set(world.get_zero());
             },
@@ -128,7 +125,7 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
                                          top: {}px;
                                          box-shadow: 0 4px 8px rgba(0,0,0,0.2);
                                          z-index: 10;",
-                                        node.radius, node.radius, node.pos.x, node.pos.y
+                                        2 * node.radius, 2 * node.radius, node.pos.x, node.pos.y
                                     )}
                                 ></div>
                             }
@@ -144,33 +141,6 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
                         height: 10px;
                         border-radius: 50%;", physics_zero.x, physics_zero.y)}></div>
                 </div>
-        </>
-    }
-}
-
-#[function_component(Interval)]
-pub fn interval() -> Html {
-    let state = use_state(|| 0);
-
-    {
-        let state = state.clone();
-        use_interval(
-            move || {
-                state.set(*state + 1);
-            },
-            2000,
-        );
-    }
-
-    let on_reset = {
-        let state = state.clone();
-        Callback::from(move |_| state.set(0))
-    };
-
-    html! {
-        <>
-            <p>{ *state }</p>
-            <button onclick={on_reset}>{ "リセット" }</button>
         </>
     }
 }
