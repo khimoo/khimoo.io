@@ -1,0 +1,232 @@
+use crate::types::{Node, NodeId, NodePosition, Nodes, Position};
+use rapier2d::prelude::*;
+use std::collections::HashMap;
+
+fn screen_to_physics(pos: &NodePosition) -> Isometry<f32> {
+    Isometry::new(vector![pos.x as f32, pos.y as f32], 0.0)
+}
+
+fn physics_to_screen(isometry: &Isometry<f32>) -> NodePosition {
+    NodePosition {
+        x: isometry.translation.x.round() as i32,
+        y: isometry.translation.y.round() as i32,
+    }
+}
+
+pub struct PhysicsWorld {
+    gravity: Vector<f32>,
+    integration_parameters: IntegrationParameters,
+    island_manager: IslandManager,
+    broad_phase: DefaultBroadPhase,
+    narrow_phase: NarrowPhase,
+    bodies: RigidBodySet,
+    colliders: ColliderSet,
+    impulse_joints: ImpulseJointSet,
+    multibody_joints: MultibodyJointSet,
+    ccd_solver: CCDSolver,
+    body_map: HashMap<NodeId, RigidBodyHandle>,
+}
+
+impl PhysicsWorld {
+    pub fn new(initial_nodes: &Nodes) -> Self {
+        let mut bodies = RigidBodySet::new();
+        let mut colliders = ColliderSet::new();
+        let mut body_map = HashMap::new();
+
+        for node in initial_nodes {
+            let rigid_body = RigidBodyBuilder::dynamic()
+                .position(screen_to_physics(&node.pos))
+                .build();
+            let collider = ColliderBuilder::ball(node.radius as f32)
+                .restitution(0.7)
+                .build();
+            let handle = bodies.insert(rigid_body);
+            colliders.insert_with_parent(collider, handle, &mut bodies);
+            body_map.insert(node.id, handle);
+        }
+
+        Self {
+            gravity: vector![0.0, 0.0], // y-down gravity
+            integration_parameters: IntegrationParameters::default(),
+            island_manager: IslandManager::new(),
+            broad_phase: DefaultBroadPhase::new(),
+            narrow_phase: NarrowPhase::new(),
+            bodies,
+            colliders,
+            impulse_joints: ImpulseJointSet::new(),
+            multibody_joints: MultibodyJointSet::new(),
+            ccd_solver: CCDSolver::new(),
+            body_map,
+        }
+    }
+
+    pub fn add_gravity_forces(&mut self) {
+        let ids: Vec<_> = self.body_map.keys().cloned().collect();
+        let center_pos = vector![400.0,400.0];
+        for i in 0..ids.len() {
+            let id_a = ids[i];
+            let handle = self.body_map[&id_a];
+            let body = &self.bodies[handle];
+
+            let pos = body.position().translation.vector;
+
+            let G = 100000.0; // 万有引力定数
+            let r_vec = pos - center_pos;
+            let r = r_vec.norm();
+            let force_vec = (-G * r_vec) / ((r * r * r).min(10000.0));
+
+            if let Some(body_mut) = self.bodies.get_mut(handle) {
+                body_mut.add_force(force_vec, true);
+            }
+        }
+    }
+
+
+    pub fn add_electric_forces(&mut self) {
+        // すべてのノードの組み合わせを調べる
+        let ids: Vec<_> = self.body_map.keys().cloned().collect();
+        for i in 0..ids.len() {
+            for j in (i + 1)..ids.len() {
+                let id_a = ids[i];
+                let id_b = ids[j];
+                let handle_a = self.body_map[&id_a];
+                let handle_b = self.body_map[&id_b];
+                let body_a = &self.bodies[handle_a];
+                let body_b = &self.bodies[handle_b];
+
+                // 位置ベクトル
+                let pos_a = body_a.position().translation.vector;
+                let pos_b = body_b.position().translation.vector;
+                let delta = pos_b - pos_a;
+                let dist = delta.norm();
+
+                //// 距離によって力を決定
+                //let force = if dist < 50.0 {
+                //    // 近すぎる場合は反発
+                //    100000.0 / (dist * dist + 1.0)
+                //} else if dist > 200.0 {
+                //    // 遠すぎる場合は引力
+                //    -5000000.0 / (dist * dist + 1.0)
+                //} else {
+                //    0.0
+                //};
+                let force = if dist > 1e-3 {-5000000.0 / (dist * dist * dist)} else { 0.0 };
+
+                // 力の方向
+                let dir = if dist > 0.0 { delta.normalize() } else { vector![0.0, 0.0] };
+                let force_vec = dir * force;
+
+                // それぞれのボディに力を加える（反対方向に同じ大きさ）
+                if let Some(body_a_mut) = self.bodies.get_mut(handle_a) {
+                    body_a_mut.add_force(-force_vec, true);
+                }
+                if let Some(body_b_mut) = self.bodies.get_mut(handle_b) {
+                    body_b_mut.add_force(force_vec, true);
+                }
+            }
+        }
+    }
+
+    pub fn add_spring_forces(&mut self) {
+        let ids: Vec<_> = self.body_map.keys().cloned().collect();
+        let center_pos = vector![400.0, 400.0]; // 中心点
+        let k = 10000.0; // バネ定数（調整が必要な値）
+
+        for i in 0..ids.len() {
+            let id_a = ids[i];
+            let handle = self.body_map[&id_a];
+            let body = &self.bodies[handle];
+            let pos = body.position().translation.vector;
+
+            let damping = 1000.0; // 減衰係数
+            let velocity = body.linvel(); // 速度ベクトルを取得
+            let damping_force = -damping * velocity; // 速度に比例する抵抗
+
+            // 中心点からの変位ベクトル
+            let displacement = pos - center_pos;
+            // フックの法則: F = -k * x
+            let force_vec = (-k * displacement) + damping_force;
+
+            if let Some(body_mut) = self.bodies.get_mut(handle) {
+                body_mut.add_force(force_vec, true);
+            }
+        }
+    }
+
+    pub fn step(&mut self) {
+        let physics_hooks = ();
+        let event_handler = ();
+
+        self.integration_parameters.dt = 1.0 / 1200.0; // Simulate 1200Hz
+
+        //self.add_gravity_forces();
+        // self.add_electric_forces();
+        self.add_spring_forces();
+
+        let mut pipeline = PhysicsPipeline::new();
+        pipeline.step(
+            &self.gravity,
+            &self.integration_parameters,
+            &mut self.island_manager,
+            &mut self.broad_phase,
+            &mut self.narrow_phase,
+            &mut self.bodies,
+            &mut self.colliders,
+            &mut self.impulse_joints,
+            &mut self.multibody_joints,
+            &mut self.ccd_solver,
+            None,
+            &physics_hooks,
+            &event_handler,
+        );
+    }
+
+    pub fn get_nodes(&self) -> Nodes {
+        self.body_map
+            .iter()
+            .filter_map(|(id, handle)| {
+                let body = &self.bodies[*handle];
+                let coll_handles = body.colliders();
+                let coll_handle = coll_handles.get(0)?;
+                let collider = &self.colliders[*coll_handle];
+                let ball = collider.shape().as_ball()?;
+
+                // フィールドアクセスに変更：`ball.radius`
+                let radius = ball.radius.round() as i32;
+
+                Some(Node {
+                    id: *id,
+                    pos: physics_to_screen(body.position()),
+                    radius,
+                })
+            })
+            .collect()
+    }
+    pub fn get_zero(&self) -> NodePosition {
+        physics_to_screen(&Isometry::new(vector![0 as f32, 0 as f32], 0.0))
+    }
+
+    pub fn set_node_position(&mut self, id: NodeId, pos: &NodePosition) {
+        if let Some(handle) = self.body_map.get(&id) {
+            if let Some(body) = self.bodies.get_mut(*handle) {
+                body.set_position(screen_to_physics(pos), true);
+            }
+        }
+    }
+
+    pub fn set_node_kinematic(&mut self, id: NodeId) {
+        if let Some(handle) = self.body_map.get(&id) {
+            if let Some(body) = self.bodies.get_mut(*handle) {
+                body.set_body_type(RigidBodyType::KinematicPositionBased, true);
+            }
+        }
+    }
+
+    pub fn set_node_dynamic(&mut self, id: NodeId) {
+        if let Some(handle) = self.body_map.get(&id) {
+            if let Some(body) = self.bodies.get_mut(*handle) {
+                body.set_body_type(RigidBodyType::Dynamic, true);
+            }
+        }
+    }
+}

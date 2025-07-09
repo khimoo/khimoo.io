@@ -1,0 +1,14 @@
+[package]
+name = "khimoo-portfolio"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+yew = { version = "0.21", features = ["csr"] }
+web-sys = { version = "0.3", features = ["CanvasRenderingContext2d", "HtmlCanvasElement", "HtmlDivElement", "Element", "DomRect", "Performance"] }
+rapier2d = { version = "0.17.2", features = ["wasm-bindgen"] }
+wasm-bindgen = "0.2"
+gloo = { version = "0.10", features = ["timers"] }
+uuid = { version = "1", features = ["v4", "js"] }
+gloo-console = "0.3.0"
+rand = "0.8"

@@ -1,46 +1,77 @@
-use yew::prelude::*;
-use crate::hooks::{use_physics_and_drag, use_container_bounds};
-use crate::components::{CoordinatesDisplay, SimulationContainer};
+use web_sys::HtmlElement;
+use yew::prelude::{Html, html, function_component, use_node_ref, use_state, Callback, MouseEvent};
+use yew_hooks::{use_effect_update_with_deps, use_measure, use_window_scroll};
+use crate::components::{NodeGraphContainer};
+use crate::types::{Position, ContainerBound};
 
 #[function_component(App)]
 pub fn app() -> Html {
-    // 1. DOM要素への参照を作成
     let container_ref = use_node_ref();
+    let container_pos_handle = use_state(|| Position {x:0,y:0});
+    let container_measure_handle = use_measure(container_ref.clone());
+    let mouse_pos_handle = use_state(|| Position::default());
+    let scroll_handle = use_window_scroll();
 
-    // 2. カスタムフックを呼び出して、ロジックと状態を取得
-    let container_bounds = use_container_bounds(container_ref.clone());
-    let physics_handle = use_physics_and_drag(container_ref.clone());
+    {
+        let node_ref = container_ref.clone();
+        let container_pos = container_pos_handle.clone();
+        let measure = container_measure_handle.clone();
+        use_effect_update_with_deps(
+            move |_| {
+                if let Some(element) = node_ref.cast::<HtmlElement>() {
+                    let rect = element.get_bounding_client_rect();
+                    container_pos.set(Position {
+                        x: rect.x() as i32,
+                        y: rect.y() as i32,
+                    });
+                }
+                || {}
+            },
+            measure
+        );
+    }
 
-    // 3. 取得した状態とコールバックをプレゼンテーションコンポーネントに渡す
+    let on_mouse_move = {
+        let mouse_pos_handle = mouse_pos_handle.clone();
+        Callback::from(move |e: MouseEvent| {
+            let pos = Position { x: e.client_x(), y: e.client_y() };
+            mouse_pos_handle.set(pos);
+        })
+    };
+
+
     html! {
-        <>
-            <h1>{"Yew & Rapier2D Physics Simulation"}</h1>
-
-            <SimulationContainer
-                balls={(*physics_handle.balls).clone()}
-                on_mouse_down={physics_handle.on_mouse_down}
-                on_mouse_move={physics_handle.on_mouse_move}
-                on_mouse_up={physics_handle.on_mouse_up}
+        <div onmousemove={on_mouse_move}>
+            // Globalな視点でのmouseの座標、スクロール量、要素の座標を渡すぞ！
+            <NodeGraphContainer
                 container_ref={container_ref}
-                show_debug_grid={(*physics_handle.show_debug_grid).clone()}
-                container_width={*physics_handle.container_width.clone()}
-                container_height={*physics_handle.container_height.clone()}
-                on_ball_context_menu={physics_handle.on_ball_context_menu.clone()}
+                container_measure={container_measure_handle.clone()}
+                container_bound={
+                    ContainerBound {
+                        x: container_measure_handle.x as i32 + container_pos_handle.x,
+                        y: container_measure_handle.y as i32 + container_pos_handle.y,
+                        width: container_measure_handle.width as i32,
+                        height: container_measure_handle.height as i32,
+                        top: container_measure_handle.top as i32 + container_pos_handle.y,
+                        left: container_measure_handle.left as i32 + container_pos_handle.x,
+                        bottom: container_measure_handle.bottom as i32 + container_pos_handle.y,
+                        right: container_measure_handle.right as i32 + container_pos_handle.x,
+                    }
+                }
+                window_mouse_pos={
+                    Position {
+                        x: mouse_pos_handle.x,
+                        y: mouse_pos_handle.y,
+                    }
+                }
+                global_mouse_pos={
+                    Position {
+                        x: mouse_pos_handle.x + scroll_handle.0 as i32,
+                        y: mouse_pos_handle.y + scroll_handle.1 as i32,
+                    }
+                }
+                window_scroll={Position::default()}
             />
-            <CoordinatesDisplay
-                position={(*physics_handle.mouse_position).clone()}
-                container_bounds={(*container_bounds).clone()}
-                balls={(*physics_handle.balls).clone()}
-                show_debug_grid={(*physics_handle.show_debug_grid).clone()}
-                current_velocity={(*physics_handle.current_velocity).clone()}
-                on_toggle_debug_grid={{
-                    let show_debug_grid = physics_handle.show_debug_grid.clone();
-                    Callback::from(move |_| {
-                        show_debug_grid.set(!*show_debug_grid);
-                    })
-                }}
-            />
-
-        </>
+        </div>
     }
 }
