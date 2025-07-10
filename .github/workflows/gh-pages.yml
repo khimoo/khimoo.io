@@ -23,7 +23,9 @@ jobs:
         working-directory: ./khimoo-portfolio
 
       - name: Copy dist to public
-        run: cp -r ./khimoo-portfolio/dist ./public
+        run: |
+          cp -r ./khimoo-portfolio/dist ./public
+          cp ./public/index.html ./public/404.html
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
