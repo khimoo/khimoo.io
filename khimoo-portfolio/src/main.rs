@@ -4,7 +4,7 @@ use yew_router::prelude::*;
 
 #[derive(Clone, Routable, PartialEq)]
 enum Route {
-    #[at("/")]
+    #[at("/main")]
     Home,
     #[at("/admin")]
     Admin,
