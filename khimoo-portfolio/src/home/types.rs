@@ -1,6 +1,4 @@
-use yew::{html, Html};
-use yew::prelude::{Callback, MouseEvent};
-use yew::virtual_dom::VNode;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Position {
@@ -20,21 +18,8 @@ pub struct ContainerBound {
     pub right: i32,
 }
 
-pub type NodeId = u32;
-
-#[derive(Clone, Copy, Default, PartialEq)]
-pub struct NodeBase {
-    pub id: NodeId,
-    pub pos: Position,
-    pub radius: i32,
-
-}
-
-#[derive(Clone, PartialEq)]
-pub struct Node {
-    pub base: NodeBase,
-    pub content: NodeContent,
-}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Default)]
+pub struct NodeId(pub u32);
 
 #[derive(Clone, PartialEq)]
 pub enum NodeContent {
@@ -43,65 +28,38 @@ pub enum NodeContent {
     Link { text: String, url: String },
 }
 
-impl Node {
-    pub fn get_div(&self, on_mouse_down: Callback<MouseEvent>) -> VNode {
-        html! {
-            <div
-                key={self.base.id.to_string()}
-                onmousedown={on_mouse_down}
-                style={format!(
-                    "position: absolute;
-                    width: {}px;
-                    height: {}px;
-                    background-color: black;
-                    border-radius: 50%;
-                    transform: translate(-50%, -50%);
-                    left: {}px;
-                    top: {}px;
-                    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-                    z-index: 10;
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;",
-                    2 * self.base.radius,
-                    2 * self.base.radius,
-                    self.base.pos.x,
-                    self.base.pos.y
-                )}
-            >
-                <div style="max-width: 80%; max-height: 80%; overflow: hidden;">
-                    {self.render_content()}
-                </div>
-            </div>
-        }
-    }
-
-    // コンテンツのレンダリング（シンプル版）
-    fn render_content(&self) -> Html {
-        match &self.content {
-            NodeContent::Text(text) => html! {
-                <span style="color: white; font-size: 12px;">
-                    {text}
-                </span>
-            },
-
-            NodeContent::Image(url) => html! {
-                <img
-                    src={url.clone()}
-                    style="max-width: 100%; max-height: 100%; object-fit: contain;"
-                />
-            },
-
-            NodeContent::Link { text, url } => html! {
-                <a
-                    href={url.clone()}
-                    style="color: lightblue; text-decoration: none; font-size: 12px;"
-                >
-                    {text}
-                </a>
-            },
-        }
+impl Default for NodeContent {
+    fn default() -> Self {
+        NodeContent::Text("".to_string())
     }
 }
 
-pub type Nodes = Vec<Node>;
+pub struct NodeRegistry {
+    pub positions: HashMap<NodeId, Position>,
+    pub radii: HashMap<NodeId, i32>,
+    pub contents: HashMap<NodeId, NodeContent>,
+}
+
+impl NodeRegistry {
+    pub fn new() -> Self {
+        Self {
+            positions: HashMap::new(),
+            radii: HashMap::new(),
+            contents: HashMap::new(),
+        }
+    }
+
+    pub fn add_node(&mut self, id: NodeId, pos: Position, radius: i32, content: NodeContent) {
+        self.positions.insert(id, pos);
+        self.radii.insert(id, radius);
+        self.contents.insert(id, content);
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (&NodeId, &Position, &i32, &NodeContent)> {
+        self.positions.iter().filter_map(move |(id, pos)| {
+            let radius = self.radii.get(id)?;
+            let content = self.contents.get(id)?;
+            Some((id, pos, radius, content))
+        })
+    }
+}

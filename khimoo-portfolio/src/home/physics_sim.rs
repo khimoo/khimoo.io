@@ -1,6 +1,8 @@
 use super::types::*;
 use rapier2d::prelude::*;
 use std::collections::HashMap;
+use std::rc::Rc;
+use std::cell::RefCell;
 
 fn screen_to_physics(pos: &Position) -> Isometry<f32> {
     Isometry::new(vector![pos.x as f32, pos.y as f32], 0.0)
@@ -27,10 +29,12 @@ pub struct PhysicsWorld {
     body_map: HashMap<NodeId, RigidBodyHandle>,
     anchor_handle: RigidBodyHandle,
     joint_map: HashMap<NodeId, ImpulseJointHandle>,
+    node_registry: Rc<RefCell<NodeRegistry>>, // 共有状態
 }
 
 impl PhysicsWorld {
-    pub fn new(initial_nodes: &Nodes) -> Self {
+    pub fn new(node_registry: Rc<RefCell<NodeRegistry>>) -> Self {
+        let registry = node_registry.borrow();
         let mut bodies = RigidBodySet::new();
         let mut colliders = ColliderSet::new();
         let mut impulse_joints = ImpulseJointSet::new();
@@ -43,20 +47,21 @@ impl PhysicsWorld {
             .build();
         let anchor_handle = bodies.insert(anchor_rigid_body);
 
-        for node in initial_nodes {
+        for (id, pos) in &registry.positions {
+            let radius = registry.radii.get(id).copied().unwrap_or(30);
             // ノード剛体の作成
             let rigid_body = RigidBodyBuilder::dynamic()
-                .position(screen_to_physics(&node.base.pos))
+                .position(screen_to_physics(pos))
                 .build();
             let handle = bodies.insert(rigid_body);
 
             // コライダーの追加
-            let collider = ColliderBuilder::ball(node.base.radius as f32)
+            let collider = ColliderBuilder::ball(radius as f32)
                 .restitution(0.7)
                 .build();
             colliders.insert_with_parent(collider, handle, &mut bodies);
 
-            body_map.insert(node.base.id, handle);
+            body_map.insert(*id, handle);
 
             // アンカーとノードの間にバネジョイントを作成
             let joint_params = SpringJointBuilder::new(
@@ -76,7 +81,7 @@ impl PhysicsWorld {
                 true // wake_up the bodies
             );
 
-            joint_map.insert(node.base.id, joint_handle);
+            joint_map.insert(*id, joint_handle);
         }
 
         Self {
@@ -93,6 +98,7 @@ impl PhysicsWorld {
             body_map,
             anchor_handle,
             joint_map,
+            node_registry: Rc::clone(&node_registry),
         }
     }
 
@@ -118,28 +124,16 @@ impl PhysicsWorld {
             &physics_hooks,
             &event_handler,
         );
-    }
-
-    pub fn get_node_bases(&self) -> Vec<NodeBase> {
-        self.body_map
-            .iter()
-            .filter_map(|(id, handle)| {
-                let body = &self.bodies[*handle];
-                let coll_handles = body.colliders();
-                let coll_handle = coll_handles.get(0)?;
-                let collider = &self.colliders[*coll_handle];
-                let ball = collider.shape().as_ball()?;
-
-                let radius = ball.radius.round() as i32;
-
-                Some(NodeBase {
-                        id: *id,
-                        pos: physics_to_screen(body.position()),
-                        radius,
-                    },
-                )
-            })
-            .collect()
+        
+        let mut registry = self.node_registry.borrow_mut();
+        for (id, handle) in &self.body_map {
+            let body = &self.bodies[*handle];
+            if body.is_moving() {
+                if let Some(pos) = registry.positions.get_mut(id) {
+                    *pos = physics_to_screen(body.position());
+                }
+            }
+        }
     }
 
     pub fn get_zero(&self) -> Position {
