@@ -19,7 +19,7 @@ jobs:
       - run: cargo install trunk
 
       - name: Build with trunk
-        run: trunk build --release --public-url /khimoo.io/
+        run: trunk build --release --public-url /khimoo-portfolio/
         working-directory: ./khimoo-portfolio
 
       - name: Copy dist to public

@@ -19,8 +19,15 @@ fn switch(routes: Route) -> Html {
 
 #[function_component(Root)]
 fn root() -> Html {
+    // 本番環境ではリポジトリ名をベースパスに設定
+    let basename = if cfg!(debug_assertions) {
+        "/".to_string()
+    } else {
+        "/khimoo-portfolio/".to_string() // 実際のリポジトリ名に変更
+    };
+
     html! {
-        <BrowserRouter>
+        <BrowserRouter basename={basename}>
             <Switch<Route> render={switch} />
         </BrowserRouter>
     }
