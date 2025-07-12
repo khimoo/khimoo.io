@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use yew::{html, Html};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Position {
@@ -31,6 +32,32 @@ pub enum NodeContent {
 impl Default for NodeContent {
     fn default() -> Self {
         NodeContent::Text("".to_string())
+    }
+}
+
+impl NodeContent {
+    pub fn render_content(&self) -> Html {
+        match self {
+            NodeContent::Text(text) => html! {
+                <span style="color: white; font-size: 12px;">
+                    {text}
+                </span>
+            },
+            NodeContent::Image(url) => html! {
+                <img
+                    src={url.clone()}
+                    style="max-width: 100%; max-height: 100%; object-fit: contain;"
+                />
+            },
+            NodeContent::Link { text, url } => html! {
+                <a
+                    href={url.clone()}
+                    style="color: lightblue; text-decoration: none; font-size: 12px;"
+                >
+                    {text}
+                </a>
+            },
+        }
     }
 }
 

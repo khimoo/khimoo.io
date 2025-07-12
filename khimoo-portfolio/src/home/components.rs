@@ -160,32 +160,8 @@ fn node_component(props: &NodeProps) -> Html {
             )}
         >
             <div style="max-width: 80%; max-height: 80%; overflow: hidden;">
-                {render_content(&props.content)}
+                {props.content.render_content()}
             </div>
         </div>
-    }
-}
-
-fn render_content(content: &NodeContent) -> Html {
-    match content {
-        NodeContent::Text(text) => html! {
-            <span style="color: white; font-size: 12px;">
-                {text}
-            </span>
-        },
-        NodeContent::Image(url) => html! {
-            <img
-                src={url.clone()}
-                style="max-width: 100%; max-height: 100%; object-fit: contain;"
-            />
-        },
-        NodeContent::Link { text, url } => html! {
-            <a
-                href={url.clone()}
-                style="color: lightblue; text-decoration: none; font-size: 12px;"
-            >
-                {text}
-            </a>
-        },
     }
 }
