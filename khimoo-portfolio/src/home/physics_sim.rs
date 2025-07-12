@@ -1,13 +1,13 @@
-use super::types::{Node, NodeId, NodePosition, Nodes};
+use super::types::*;
 use rapier2d::prelude::*;
 use std::collections::HashMap;
 
-fn screen_to_physics(pos: &NodePosition) -> Isometry<f32> {
+fn screen_to_physics(pos: &Position) -> Isometry<f32> {
     Isometry::new(vector![pos.x as f32, pos.y as f32], 0.0)
 }
 
-fn physics_to_screen(isometry: &Isometry<f32>) -> NodePosition {
-    NodePosition {
+fn physics_to_screen(isometry: &Isometry<f32>) -> Position {
+    Position {
         x: isometry.translation.x.round() as i32,
         y: isometry.translation.y.round() as i32,
     }
@@ -46,17 +46,17 @@ impl PhysicsWorld {
         for node in initial_nodes {
             // ノード剛体の作成
             let rigid_body = RigidBodyBuilder::dynamic()
-                .position(screen_to_physics(&node.pos))
+                .position(screen_to_physics(&node.base.pos))
                 .build();
             let handle = bodies.insert(rigid_body);
 
             // コライダーの追加
-            let collider = ColliderBuilder::ball(node.radius as f32)
+            let collider = ColliderBuilder::ball(node.base.radius as f32)
                 .restitution(0.7)
                 .build();
             colliders.insert_with_parent(collider, handle, &mut bodies);
 
-            body_map.insert(node.id, handle);
+            body_map.insert(node.base.id, handle);
 
             // アンカーとノードの間にバネジョイントを作成
             let joint_params = SpringJointBuilder::new(
@@ -76,7 +76,7 @@ impl PhysicsWorld {
                 true // wake_up the bodies
             );
 
-            joint_map.insert(node.id, joint_handle);
+            joint_map.insert(node.base.id, joint_handle);
         }
 
         Self {
@@ -120,7 +120,7 @@ impl PhysicsWorld {
         );
     }
 
-    pub fn get_nodes(&self) -> Nodes {
+    pub fn get_node_bases(&self) -> Vec<NodeBase> {
         self.body_map
             .iter()
             .filter_map(|(id, handle)| {
@@ -132,20 +132,21 @@ impl PhysicsWorld {
 
                 let radius = ball.radius.round() as i32;
 
-                Some(Node {
-                    id: *id,
-                    pos: physics_to_screen(body.position()),
-                    radius,
-                })
+                Some(NodeBase {
+                        id: *id,
+                        pos: physics_to_screen(body.position()),
+                        radius,
+                    },
+                )
             })
             .collect()
     }
 
-    pub fn get_zero(&self) -> NodePosition {
+    pub fn get_zero(&self) -> Position {
         physics_to_screen(&Isometry::new(vector![0 as f32, 0 as f32], 0.0))
     }
 
-    pub fn set_node_position(&mut self, id: NodeId, pos: &NodePosition) {
+    pub fn set_node_position(&mut self, id: NodeId, pos: &Position) {
         if let Some(handle) = self.body_map.get(&id) {
             if let Some(body) = self.bodies.get_mut(*handle) {
                 body.set_position(screen_to_physics(pos), true);

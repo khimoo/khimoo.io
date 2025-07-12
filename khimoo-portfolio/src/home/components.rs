@@ -1,5 +1,5 @@
 use super::physics_sim::PhysicsWorld;
-use super::types::{ContainerBound, Node, NodeId, NodePosition, Position};
+use super::types::*;
 use std::cell::RefCell;
 use std::rc::Rc;
 use yew::prelude::{
@@ -23,14 +23,21 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
 
     let initial_nodes = vec![
         Node {
-            id: 0,
-            pos: NodePosition { x: 100, y: 150 },
-            radius: 30,
+            base: NodeBase {
+                id: 0,
+                pos: Position { x: 100, y: 150 },
+                radius: 30,
+            },
+            content: NodeContent::Text("node 0".to_string()),
         },
         Node {
-            id: 1,
-            pos: NodePosition { x: 300, y: 250 },
-            radius: 50,
+            base: NodeBase {
+                id: 1,
+                pos: Position { x: 200, y: 250 },
+                radius: 50,
+            },
+            content: NodeContent::Text("hello".to_string()),
+
         },
     ];
     let nodes_handle = use_state(|| initial_nodes.clone());
@@ -46,7 +53,7 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
                 let mut world = physics_world.borrow_mut();
                 world.set_node_position(
                     id,
-                    &NodePosition {
+                    &Position {
                         x: global_mouse_pos.x as i32,
                         y: global_mouse_pos.y as i32,
                     },
@@ -75,21 +82,30 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
         })
     };
 
-    let physics_zero = use_state(|| NodePosition::default());
+    let physics_zero = use_state(|| Position::default());
 
     {
         let nodes_handle = nodes_handle.clone();
         let physics_world = physics_world.clone();
-        let physics_zero = physics_zero.clone();
         use_interval(
             move || {
                 let mut world = physics_world.borrow_mut();
                 world.step();
-                nodes_handle.set(world.get_nodes());
-                physics_zero.set(world.get_zero());
-            },
-            16,
-        ); // ~60fps
+                let updated_bases = world.get_node_bases();
+                let updated_nodes = nodes_handle.iter()
+                    .map(|node| {
+                        if let Some(new_base) = updated_bases.iter()
+                            .find(|base| base.id == node.base.id)
+                        {
+                            Node {
+                                base: *new_base,
+                                content: node.content.clone()
+                            }
+                        } else { node.clone() }
+                    }).collect();
+                nodes_handle.set(updated_nodes);
+                },
+            16, ); // ~60fps
     }
     html! {
         <>
@@ -105,30 +121,13 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
                         nodes_handle.iter().map(|node| {
                             let on_mouse_down = {
                                 let on_mouse_down = on_mouse_down.clone();
-                                let id = node.id;
+                                let id = node.base.id;
                                 Callback::from(move |e: MouseEvent| {
                                     e.stop_propagation();
                                     on_mouse_down.emit(id);
                                 })
                             };
-                            html! {
-                                <div key={node.id.to_string()}
-                                    onmousedown={on_mouse_down}
-                                    style={
-                                        format!("position: absolute;
-                                         width: {}px;
-                                         height: {}px;
-                                         background-color: black;
-                                         border-radius: 50%;
-                                         transform: translate(-50%, -50%);
-                                         left: {}px;
-                                         top: {}px;
-                                         box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-                                         z-index: 10;",
-                                        2 * node.radius, 2 * node.radius, node.pos.x, node.pos.y
-                                    )}
-                                ></div>
-                            }
+                            node.get_div(on_mouse_down)
                         }).collect::<Html>()
                     }
                     <div style={
