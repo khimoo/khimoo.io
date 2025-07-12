@@ -105,12 +105,12 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
                             })
                         };
                         html!{
-                            <NodeComponent 
-                                key={id.0} 
-                                id={*id} 
-                                pos={*pos} 
-                                radius={*radius} 
-                                content={content.clone()} 
+                            <NodeComponent
+                                key={id.0}
+                                id={*id}
+                                pos={*pos}
+                                radius={*radius}
+                                content={content.clone()}
                                 {on_mouse_down}
                             />
                         }
@@ -140,7 +140,19 @@ fn node_component(props: &NodeProps) -> Html {
             key={props.id.0.to_string()}
             onmousedown={props.on_mouse_down.clone()}
             style={format!(
-                "position: absolute;\n                width: {}px;\n                height: {}px;\n                background-color: black;\n                border-radius: 50%;\n                transform: translate(-50%, -50%);\n                left: {}px;\n                top: {}px;\n                box-shadow: 0 4px 8px rgba(0,0,0,0.2);\n                z-index: 10;\n                display: flex;\n                justify-content: center;\n                align-items: center;",
+                "position: absolute;
+                width: {}px;
+                height: {}px;
+                background-color: black;
+                border-radius: 50%;
+                transform: translate(-50%, -50%);
+                left: {}px;
+                top: {}px;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+                z-index: 10;
+                display: flex;
+                justify-content: center;
+                align-items: center;",
                 2 * props.radius,
                 2 * props.radius,
                 props.pos.x,
