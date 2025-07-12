@@ -128,10 +128,8 @@ impl PhysicsWorld {
         let mut registry = self.node_registry.borrow_mut();
         for (id, handle) in &self.body_map {
             let body = &self.bodies[*handle];
-            if body.is_moving() {
-                if let Some(pos) = registry.positions.get_mut(id) {
-                    *pos = physics_to_screen(body.position());
-                }
+            if let Some(pos) = registry.positions.get_mut(id) {
+                *pos = physics_to_screen(body.position());
             }
         }
     }
