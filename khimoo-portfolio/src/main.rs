@@ -1,6 +1,7 @@
-use khimoo_portfolio::App;
 use yew::prelude::*;
 use yew_router::prelude::*;
+
+use khimoo_portfolio::home::app::Home;
 
 #[derive(Clone, Routable, PartialEq)]
 enum Route {
@@ -12,7 +13,7 @@ enum Route {
 
 fn switch(routes: Route) -> Html {
     match routes {
-        Route::Home => html! {<App/>},
+        Route::Home => html! {<Home/>},
         Route::Admin => html! { <h1> {"Admin"} </h1> },
     }
 }

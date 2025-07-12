@@ -1,4 +1,4 @@
-use crate::types::{Node, NodeId, NodePosition, Nodes};
+use super::types::{Node, NodeId, NodePosition, Nodes};
 use rapier2d::prelude::*;
 use std::collections::HashMap;
 

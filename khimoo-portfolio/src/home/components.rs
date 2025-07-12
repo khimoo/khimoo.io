@@ -1,5 +1,5 @@
-use crate::physics_sim::PhysicsWorld;
-use crate::types::{ContainerBound, Node, NodeId, NodePosition, Position};
+use super::physics_sim::PhysicsWorld;
+use super::types::{ContainerBound, Node, NodeId, NodePosition, Position};
 use std::cell::RefCell;
 use std::rc::Rc;
 use yew::prelude::{

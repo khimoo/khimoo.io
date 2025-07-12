@@ -1,11 +1,11 @@
 use web_sys::HtmlElement;
 use yew::prelude::{Html, html, function_component, use_node_ref, use_state, Callback, MouseEvent};
 use yew_hooks::{use_effect_update_with_deps, use_measure, use_window_scroll};
-use crate::components::{NodeGraphContainer};
-use crate::types::{Position, ContainerBound};
+use super::types::{Position, ContainerBound};
+use super::components::NodeGraphContainer;
 
-#[function_component(App)]
-pub fn app() -> Html {
+#[function_component(Home)]
+pub fn home() -> Html {
     let container_ref = use_node_ref();
     let container_pos_handle = use_state(|| Position {x:0,y:0});
     let container_measure_handle = use_measure(container_ref.clone());
