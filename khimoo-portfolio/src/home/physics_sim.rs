@@ -1,19 +1,9 @@
 use super::types::*;
+use super::viewport::Viewport;
 use rapier2d::prelude::*;
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
-use std::cell::RefCell;
-
-fn screen_to_physics(pos: &Position) -> Isometry<f32> {
-    Isometry::new(vector![pos.x as f32, pos.y as f32], 0.0)
-}
-
-fn physics_to_screen(isometry: &Isometry<f32>) -> Position {
-    Position {
-        x: isometry.translation.x.round() as i32,
-        y: isometry.translation.y.round() as i32,
-    }
-}
 
 pub struct PhysicsWorld {
     gravity: Vector<f32>,
@@ -33,7 +23,7 @@ pub struct PhysicsWorld {
 }
 
 impl PhysicsWorld {
-    pub fn new(node_registry: Rc<RefCell<NodeRegistry>>) -> Self {
+    pub fn new(node_registry: Rc<RefCell<NodeRegistry>>, viewport: &Viewport) -> Self {
         let registry = node_registry.borrow();
         let mut bodies = RigidBodySet::new();
         let mut colliders = ColliderSet::new();
@@ -43,7 +33,7 @@ impl PhysicsWorld {
 
         // アンカー剛体を作成 (画面中央に固定)
         let anchor_rigid_body = RigidBodyBuilder::fixed()
-            .position(Isometry::new(vector![400.0, 400.0], 0.0))
+            .position(viewport.screen_to_physics(&Position { x: 400, y: 400 }))
             .build();
         let anchor_handle = bodies.insert(anchor_rigid_body);
 
@@ -51,7 +41,7 @@ impl PhysicsWorld {
             let radius = registry.radii.get(id).copied().unwrap_or(30);
             // ノード剛体の作成
             let rigid_body = RigidBodyBuilder::dynamic()
-                .position(screen_to_physics(pos))
+                .position(viewport.screen_to_physics(pos))
                 .build();
             let handle = bodies.insert(rigid_body);
 
@@ -65,12 +55,12 @@ impl PhysicsWorld {
 
             // アンカーとノードの間にバネジョイントを作成
             let joint_params = SpringJointBuilder::new(
-                0.0,     // 自然長 (rest_length)
-                1000000.0,  // バネ定数 (stiffness)
-                300000.0    // 減衰係数 (damping)
+                0.0,       // 自然長 (rest_length)
+                1000000.0, // バネ定数 (stiffness)
+                300000.0,  // 減衰係数 (damping)
             )
-            .local_anchor1(point![0.0, 0.0])  // アンカー側の接続点
-            .local_anchor2(point![0.0, 0.0])  // ノード側の接続点
+            .local_anchor1(point![0.0, 0.0]) // アンカー側の接続点
+            .local_anchor2(point![0.0, 0.0]) // ノード側の接続点
             .build();
 
             // ジョイント追加
@@ -78,7 +68,7 @@ impl PhysicsWorld {
                 anchor_handle,
                 handle,
                 joint_params,
-                true // wake_up the bodies
+                true, // wake_up the bodies
             );
 
             joint_map.insert(*id, joint_handle);
@@ -102,7 +92,7 @@ impl PhysicsWorld {
         }
     }
 
-    pub fn step(&mut self) {
+    pub fn step(&mut self, viewport: &Viewport) {
         let physics_hooks = ();
         let event_handler = ();
 
@@ -124,24 +114,20 @@ impl PhysicsWorld {
             &physics_hooks,
             &event_handler,
         );
-        
+
         let mut registry = self.node_registry.borrow_mut();
         for (id, handle) in &self.body_map {
             let body = &self.bodies[*handle];
             if let Some(pos) = registry.positions.get_mut(id) {
-                *pos = physics_to_screen(body.position());
+                *pos = viewport.physics_to_screen(body.position());
             }
         }
     }
 
-    pub fn get_zero(&self) -> Position {
-        physics_to_screen(&Isometry::new(vector![0 as f32, 0 as f32], 0.0))
-    }
-
-    pub fn set_node_position(&mut self, id: NodeId, pos: &Position) {
+    pub fn set_node_position(&mut self, id: NodeId, pos: &Position, viewport: &Viewport) {
         if let Some(handle) = self.body_map.get(&id) {
             if let Some(body) = self.bodies.get_mut(*handle) {
-                body.set_position(screen_to_physics(pos), true);
+                body.set_position(viewport.screen_to_physics(pos), true);
             }
         }
     }

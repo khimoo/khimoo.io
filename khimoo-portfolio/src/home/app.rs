@@ -1,16 +1,15 @@
-use web_sys::HtmlElement;
-use yew::prelude::{Html, html, function_component, use_node_ref, use_state, Callback, MouseEvent};
-use yew_hooks::{use_effect_update_with_deps, use_measure, use_window_scroll};
-use super::types::{Position, ContainerBound};
 use super::components::NodeGraphContainer;
+use super::types::{ContainerBound, Position};
+use web_sys::HtmlElement;
+use yew::prelude::{function_component, html, use_node_ref, use_state, Callback, Html, MouseEvent};
+use yew_hooks::{use_effect_update_with_deps, use_measure};
 
 #[function_component(Home)]
 pub fn home() -> Html {
     let container_ref = use_node_ref();
-    let container_pos_handle = use_state(|| Position {x:0,y:0});
+    let container_pos_handle = use_state(|| Position { x: 0, y: 0 });
     let container_measure_handle = use_measure(container_ref.clone());
     let mouse_pos_handle = use_state(|| Position::default());
-    let scroll_handle = use_window_scroll();
 
     {
         let node_ref = container_ref.clone();
@@ -27,18 +26,20 @@ pub fn home() -> Html {
                 }
                 || {}
             },
-            measure
+            measure,
         );
     }
 
     let on_mouse_move = {
         let mouse_pos_handle = mouse_pos_handle.clone();
         Callback::from(move |e: MouseEvent| {
-            let pos = Position { x: e.client_x(), y: e.client_y() };
+            let pos = Position {
+                x: e.client_x(),
+                y: e.client_y(),
+            };
             mouse_pos_handle.set(pos);
         })
     };
-
 
     html! {
         <div onmousemove={on_mouse_move}>
@@ -58,19 +59,6 @@ pub fn home() -> Html {
                         right: container_measure_handle.right as i32 + container_pos_handle.x,
                     }
                 }
-                window_mouse_pos={
-                    Position {
-                        x: mouse_pos_handle.x,
-                        y: mouse_pos_handle.y,
-                    }
-                }
-                global_mouse_pos={
-                    Position {
-                        x: mouse_pos_handle.x + scroll_handle.0 as i32,
-                        y: mouse_pos_handle.y + scroll_handle.1 as i32,
-                    }
-                }
-                window_scroll={Position::default()}
             />
         </div>
     }
