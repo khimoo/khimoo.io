@@ -117,7 +117,14 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
                     }).collect::<Html>()
                 }
                 <div style={
-                    format!("position: absolute;\n                    left: {}px;\n                    top: {}px;\n                    background-color: black;\n                    transform: translate(-50%, -50%);\n                    width: 10px;\n                    height: 10px;\n                    border-radius: 50%;", physics_zero.x, physics_zero.y)}>
+                    format!("position: absolute;
+                        left: {}px;
+                        top: {}px;
+                        background-color: black;
+                        transform: translate(-50%, -50%);
+                        width: 10px;
+                        height: 10px;
+                        border-radius: 50%;", physics_zero.x, physics_zero.y)}>
                 </div>
             </div>
         </>
