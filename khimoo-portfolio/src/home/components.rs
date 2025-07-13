@@ -1,6 +1,5 @@
-use super::physics_sim::PhysicsWorld;
+use super::physics_sim::{PhysicsWorld, Viewport};
 use super::types::*;
-use super::viewport::Viewport;
 use std::cell::RefCell;
 use std::rc::Rc;
 use yew::prelude::*;

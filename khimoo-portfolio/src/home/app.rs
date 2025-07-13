@@ -43,7 +43,7 @@ pub fn home() -> Html {
 
     html! {
         <div onmousemove={on_mouse_move}>
-            // Globalな視点でのmouseの座標、スクロール量、要素の座標を渡すぞ！
+            // Globalな視点でのmouseの座標、要素の座標を渡すぞ！
             <NodeGraphContainer
                 container_ref={container_ref}
                 container_measure={container_measure_handle.clone()}
