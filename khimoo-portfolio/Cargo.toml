@@ -9,3 +9,10 @@ yew = { version = "0.21", features = ["csr"] }
 web-sys = { version = "0.3", features = ["HtmlElement", "HtmlDivElement", "Element", "DomRect"] }
 yew-hooks = {version = "0.3" }
 yew-router = { version = "0.18" }
+# 追加: Markdown 変換
+pulldown-cmark = "0.10"
+
+# bin 名が main.rs の場合は省略可能だが明示
+[[bin]]
+name = "khimoo_portfolio"
+path = "src/main.rs"

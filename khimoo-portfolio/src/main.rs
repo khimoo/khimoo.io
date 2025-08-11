@@ -2,6 +2,7 @@ use yew::prelude::*;
 use yew_router::prelude::*;
 
 use khimoo_portfolio::home::app::Home;
+use khimoo_portfolio::home::article::{ArticleIndex, ArticleView};
 
 #[derive(Clone, Routable, PartialEq)]
 enum Route {
@@ -9,12 +10,18 @@ enum Route {
     Home,
     #[at("/admin")]
     Admin,
+    #[at("/article")]
+    ArticleIndex,
+    #[at("/article/:slug")]
+    ArticleShow { slug: String },
 }
 
 fn switch(routes: Route) -> Html {
     match routes {
         Route::Home => html! {<Home/>},
         Route::Admin => html! { <h1> {"Admin"} </h1> },
+        Route::ArticleIndex => html! { <ArticleIndex /> },
+        Route::ArticleShow { slug } => html! { <ArticleView slug={slug} /> },
     }
 }
 
