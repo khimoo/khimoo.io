@@ -3,7 +3,9 @@ use super::types::*;
 use std::cell::RefCell;
 use std::rc::Rc;
 use yew::prelude::*;
-use yew_hooks::{use_interval, use_window_scroll, UseMeasureState};
+use yew_hooks::{use_interval, use_window_scroll, UseMeasureState, use_effect_update_with_deps};
+use web_sys::Event;
+use web_sys::wasm_bindgen::JsCast;
 
 #[derive(Properties, PartialEq)]
 pub struct NodeGraphContainerProps {
@@ -16,6 +18,7 @@ pub struct NodeGraphContainerProps {
 pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
     let dragged_node_id = use_state(|| None::<NodeId>);
     let viewport = use_state(Viewport::default);
+    let force_settings = use_state(ForceSettings::default);
 
     let node_registry = use_state(|| {
         let mut reg = NodeRegistry::new();
@@ -62,8 +65,22 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
         Rc::new(RefCell::new(PhysicsWorld::new(
             Rc::clone(&node_registry),
             &viewport,
+            *force_settings,
         )))
     });
+
+    // 力の設定が変更されたらPhysicsWorldを更新
+    {
+        let physics_world = physics_world.clone();
+        let force_settings_clone = force_settings.clone();
+        use_effect_update_with_deps(
+            move |_| {
+                physics_world.borrow_mut().update_force_settings(*force_settings_clone);
+                || {}
+            },
+            force_settings.clone(),
+        );
+    }
 
     let scroll = use_window_scroll();
 
@@ -119,6 +136,51 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
         );
     }
 
+    // 力の設定を更新するコールバック
+    let on_repulsion_strength_change = {
+        let force_settings = force_settings.clone();
+        Callback::from(move |e: Event| {
+            let target = e.target().unwrap().unchecked_into::<web_sys::HtmlInputElement>();
+            let value = target.value().parse::<f32>().unwrap_or(50000.0);
+            let mut settings = *force_settings;
+            settings.repulsion_strength = value;
+            force_settings.set(settings);
+        })
+    };
+
+    let on_repulsion_distance_change = {
+        let force_settings = force_settings.clone();
+        Callback::from(move |e: Event| {
+            let target = e.target().unwrap().unchecked_into::<web_sys::HtmlInputElement>();
+            let value = target.value().parse::<f32>().unwrap_or(20.0);
+            let mut settings = *force_settings;
+            settings.repulsion_min_distance = value;
+            force_settings.set(settings);
+        })
+    };
+
+    let on_anchor_strength_change = {
+        let force_settings = force_settings.clone();
+        Callback::from(move |e: Event| {
+            let target = e.target().unwrap().unchecked_into::<web_sys::HtmlInputElement>();
+            let value = target.value().parse::<f32>().unwrap_or(1000000.0);
+            let mut settings = *force_settings;
+            settings.anchor_strength = value;
+            force_settings.set(settings);
+        })
+    };
+
+    let on_link_strength_change = {
+        let force_settings = force_settings.clone();
+        Callback::from(move |e: Event| {
+            let target = e.target().unwrap().unchecked_into::<web_sys::HtmlInputElement>();
+            let value = target.value().parse::<f32>().unwrap_or(5000.0);
+            let mut settings = *force_settings;
+            settings.link_strength = value;
+            force_settings.set(settings);
+        })
+    };
+
     html! {
         <>
             <div
@@ -130,6 +192,62 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
                 <h1>{"node_graph"}</h1>
                 <p>{ format!("{:?}", *viewport)}</p>
                 <p>{ format!("{:?}", props.container_bound)}</p>
+                {{
+                    // 力の設定UI
+                    html! {
+                        <div style="position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.8); color: white; padding: 20px; border-radius: 10px; z-index: 100;">
+                            <h3 style="margin: 0 0 15px 0;">{"力の設定"}</h3>
+                            <div style="margin-bottom: 15px;">
+                                <label>{"反発力の強さ: "}{force_settings.repulsion_strength as i32}</label><br/>
+                                <input
+                                    type="range"
+                                    min="1000"
+                                    max="200000"
+                                    step="100"
+                                    value={force_settings.repulsion_strength.to_string()}
+                                    onchange={on_repulsion_strength_change.clone()}
+                                    style="width: 200px;"
+                                />
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <label>{"反発力の最小距離: "}{force_settings.repulsion_min_distance as i32}</label><br/>
+                                <input
+                                    type="range"
+                                    min="100"
+                                    max="10000"
+                                    step="5"
+                                    value={force_settings.repulsion_min_distance.to_string()}
+                                    onchange={on_repulsion_distance_change.clone()}
+                                    style="width: 200px;"
+                                />
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <label>{"アンカー力の強さ: "}{force_settings.anchor_strength as i32}</label><br/>
+                                <input
+                                    type="range"
+                                    min="10000"
+                                    max="5000000"
+                                    step="1000"
+                                    value={force_settings.anchor_strength.to_string()}
+                                    onchange={on_anchor_strength_change.clone()}
+                                    style="width: 200px;"
+                                />
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <label>{"リンク力の強さ: "}{force_settings.link_strength as i32}</label><br/>
+                                <input
+                                    type="range"
+                                    min="100"
+                                    max="50000"
+                                    step="100"
+                                    value={force_settings.link_strength.to_string()}
+                                    onchange={on_link_strength_change.clone()}
+                                    style="width: 200px;"
+                                />
+                            </div>
+                        </div>
+                    }
+                }}
                 {{
                     // 背景のエッジ描画
                     let reg = node_registry.borrow();

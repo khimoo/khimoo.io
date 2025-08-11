@@ -56,10 +56,11 @@ pub struct PhysicsWorld {
     joint_map: HashMap<NodeId, ImpulseJointHandle>,
     node_registry: Rc<RefCell<NodeRegistry>>, // 共有状態
     edge_joint_handles: Vec<ImpulseJointHandle>,
+    force_settings: ForceSettings,
 }
 
 impl PhysicsWorld {
-    pub fn new(node_registry: Rc<RefCell<NodeRegistry>>, viewport: &Viewport) -> Self {
+    pub fn new(node_registry: Rc<RefCell<NodeRegistry>>, viewport: &Viewport, force_settings: ForceSettings) -> Self {
         let registry = node_registry.borrow();
         let mut bodies = RigidBodySet::new();
         let mut colliders = ColliderSet::new();
@@ -93,7 +94,7 @@ impl PhysicsWorld {
             // アンカーとノードの間にバネジョイントを作成
             let joint_params = SpringJointBuilder::new(
                 0.0,       // 自然長 (rest_length)
-                1000000.0, // バネ定数 (stiffness)
+                force_settings.anchor_strength, // バネ定数 (stiffness)
                 300000.0,  // 減衰係数 (damping)
             )
             .local_anchor1(point![0.0, 0.0]) // アンカー側の接続点
@@ -116,7 +117,7 @@ impl PhysicsWorld {
             if let (Some(&a), Some(&b)) = (body_map.get(from), body_map.get(to)) {
                 let joint_params = SpringJointBuilder::new(
                     0.0,     // 自然長
-                    5000.0,  // バネ定数（アンカーより弱め）
+                    force_settings.link_strength,  // バネ定数（アンカーより弱め）
                     200.0,   // 減衰
                 )
                 .local_anchor1(point![0.0, 0.0])
@@ -143,14 +144,78 @@ impl PhysicsWorld {
             joint_map,
             node_registry: Rc::clone(&node_registry),
             edge_joint_handles,
+            force_settings,
         }
+    }
+
+    // ノード間の反発力を計算して適用
+    fn apply_repulsion_forces(&mut self, _viewport: &Viewport) {
+        let registry = self.node_registry.borrow();
+        let mut forces = HashMap::new();
+
+        // 全てのノードペアに対して反発力を計算
+        for (id1, pos1) in &registry.positions {
+            for (id2, pos2) in &registry.positions {
+                if id1 == id2 {
+                    continue;
+                }
+
+                let dx = pos2.x - pos1.x;
+                let dy = pos2.y - pos1.y;
+                let distance = ((dx * dx + dy * dy) as f32).sqrt();
+
+                if distance < 1.0 {
+                    continue; // 距離が近すぎる場合はスキップ
+                }
+
+                let radius1 = registry.radii.get(id1).copied().unwrap_or(30) as f32;
+                let radius2 = registry.radii.get(id2).copied().unwrap_or(30) as f32;
+                let min_distance = radius1 + radius2 + self.force_settings.repulsion_min_distance; // 最小距離（半径 + 余白）
+
+                if distance < min_distance {
+                    // 反発力の強さ（距離が近いほど強い）
+                    let force_magnitude = self.force_settings.repulsion_strength * (min_distance - distance) / min_distance;
+
+                    // 力の方向（id1からid2への方向）
+                    let force_x = (dx as f32 / distance) * force_magnitude;
+                    let force_y = (dy as f32 / distance) * force_magnitude;
+
+                    // id1に-id2方向の力を、id2にid1方向の力を適用
+                    *forces.entry(*id1).or_insert((0.0, 0.0)) =
+                        (forces.get(id1).unwrap_or(&(0.0, 0.0)).0 - force_x,
+                         forces.get(id1).unwrap_or(&(0.0, 0.0)).1 - force_y);
+
+                    *forces.entry(*id2).or_insert((0.0, 0.0)) =
+                        (forces.get(id2).unwrap_or(&(0.0, 0.0)).0 + force_x,
+                         forces.get(id2).unwrap_or(&(0.0, 0.0)).1 + force_y);
+                }
+            }
+        }
+
+        // 計算した力を各ノードに適用
+        for (id, (fx, fy)) in forces {
+            if let Some(&handle) = self.body_map.get(&id) {
+                if let Some(body) = self.bodies.get_mut(handle) {
+                    let impulse = vector![fx, fy];
+                    body.apply_impulse(impulse, true);
+                }
+            }
+        }
+    }
+
+    // 力の設定を更新
+    pub fn update_force_settings(&mut self, new_settings: ForceSettings) {
+        self.force_settings = new_settings;
     }
 
     pub fn step(&mut self, viewport: &Viewport) {
         let physics_hooks = ();
         let event_handler = ();
 
-        self.integration_parameters.dt = 1.0 / 120.0;
+        self.integration_parameters.dt = 1.0 / 12.0;
+
+        // 反発力を適用
+        self.apply_repulsion_forces(viewport);
 
         let mut pipeline = PhysicsPipeline::new();
         pipeline.step(
