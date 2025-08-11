@@ -90,7 +90,7 @@ impl PhysicsWorld {
             if let (Some(&a), Some(&b)) = (body_map.get(from), body_map.get(to)) {
                 let joint_params = SpringJointBuilder::new(
                     0.0,     // 自然長
-                    force_settings.link_strength,  // バネ定数（アンカーより弱め）
+                    force_settings.link_strength,  // バネ定数
                     200.0,   // 減衰
                 )
                 .local_anchor1(point![0.0, 0.0])

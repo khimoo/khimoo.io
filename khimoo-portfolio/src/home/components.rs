@@ -159,16 +159,6 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
         })
     };
 
-    let on_anchor_strength_change = {
-        let force_settings = force_settings.clone();
-        Callback::from(move |e: Event| {
-            let target = e.target().unwrap().unchecked_into::<web_sys::HtmlInputElement>();
-            let value = target.value().parse::<f32>().unwrap_or(1000000.0);
-            let mut settings = *force_settings;
-            settings.anchor_strength = value;
-            force_settings.set(settings);
-        })
-    };
 
     let on_link_strength_change = {
         let force_settings = force_settings.clone();
@@ -264,18 +254,6 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
                                     step="1"
                                     value={force_settings.center_damping.to_string()}
                                     onchange={on_center_damping_change.clone()}
-                                    style="width: 200px;"
-                                />
-                            </div>
-                            <div style="margin-bottom: 15px;">
-                                <label>{"アンカー力の強さ: "}{force_settings.anchor_strength as i32}</label><br/>
-                                <input
-                                    type="range"
-                                    min="0"
-                                    max="5000000"
-                                    step="100000"
-                                    value={force_settings.anchor_strength.to_string()}
-                                    onchange={on_anchor_strength_change.clone()}
                                     style="width: 200px;"
                                 />
                             </div>

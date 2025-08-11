@@ -5,7 +5,6 @@ use yew::{html, Html};
 pub struct ForceSettings {
     pub repulsion_strength: f32,
     pub repulsion_min_distance: f32,
-    pub anchor_strength: f32,
     pub link_strength: f32,
     pub center_strength: f32,
     pub center_damping: f32,
@@ -16,7 +15,6 @@ impl Default for ForceSettings {
         Self {
             repulsion_strength: 50000.0,
             repulsion_min_distance: 400.0,
-            anchor_strength: 1000000.0,
             link_strength: 5000.0,
             center_strength: 3000.0,
             center_damping: 5.0,
