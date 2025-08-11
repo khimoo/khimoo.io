@@ -181,6 +181,28 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
         })
     };
 
+    let on_center_strength_change = {
+        let force_settings = force_settings.clone();
+        Callback::from(move |e: Event| {
+            let target = e.target().unwrap().unchecked_into::<web_sys::HtmlInputElement>();
+            let value = target.value().parse::<f32>().unwrap_or(50.0);
+            let mut settings = *force_settings;
+            settings.center_strength = value;
+            force_settings.set(settings);
+        })
+    };
+
+    let on_center_damping_change = {
+        let force_settings = force_settings.clone();
+        Callback::from(move |e: Event| {
+            let target = e.target().unwrap().unchecked_into::<web_sys::HtmlInputElement>();
+            let value = target.value().parse::<f32>().unwrap_or(5.0);
+            let mut settings = *force_settings;
+            settings.center_damping = value;
+            force_settings.set(settings);
+        })
+    };
+
     html! {
         <>
             <div
@@ -201,9 +223,9 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
                                 <label>{"反発力の強さ: "}{force_settings.repulsion_strength as i32}</label><br/>
                                 <input
                                     type="range"
-                                    min="1000"
+                                    min="0"
                                     max="200000"
-                                    step="100"
+                                    step="1000"
                                     value={force_settings.repulsion_strength.to_string()}
                                     onchange={on_repulsion_strength_change.clone()}
                                     style="width: 200px;"
@@ -213,8 +235,8 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
                                 <label>{"反発力の最小距離: "}{force_settings.repulsion_min_distance as i32}</label><br/>
                                 <input
                                     type="range"
-                                    min="100"
-                                    max="10000"
+                                    min="0"
+                                    max="1000"
                                     step="5"
                                     value={force_settings.repulsion_min_distance.to_string()}
                                     onchange={on_repulsion_distance_change.clone()}
@@ -222,12 +244,36 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
                                 />
                             </div>
                             <div style="margin-bottom: 15px;">
+                                <label>{"中心力の強さ: "}{force_settings.center_strength as i32}</label><br/>
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="3000"
+                                    step="1"
+                                    value={force_settings.center_strength.to_string()}
+                                    onchange={on_center_strength_change.clone()}
+                                    style="width: 200px;"
+                                />
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <label>{"中心減衰: "}{force_settings.center_damping as i32}</label><br/>
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="50"
+                                    step="1"
+                                    value={force_settings.center_damping.to_string()}
+                                    onchange={on_center_damping_change.clone()}
+                                    style="width: 200px;"
+                                />
+                            </div>
+                            <div style="margin-bottom: 15px;">
                                 <label>{"アンカー力の強さ: "}{force_settings.anchor_strength as i32}</label><br/>
                                 <input
                                     type="range"
-                                    min="10000"
+                                    min="0"
                                     max="5000000"
-                                    step="1000"
+                                    step="100000"
                                     value={force_settings.anchor_strength.to_string()}
                                     onchange={on_anchor_strength_change.clone()}
                                     style="width: 200px;"
@@ -237,7 +283,7 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
                                 <label>{"リンク力の強さ: "}{force_settings.link_strength as i32}</label><br/>
                                 <input
                                     type="range"
-                                    min="100"
+                                    min="0"
                                     max="50000"
                                     step="100"
                                     value={force_settings.link_strength.to_string()}

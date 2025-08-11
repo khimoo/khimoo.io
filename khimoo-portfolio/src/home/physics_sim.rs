@@ -52,8 +52,6 @@ pub struct PhysicsWorld {
     multibody_joints: MultibodyJointSet,
     ccd_solver: CCDSolver,
     body_map: HashMap<NodeId, RigidBodyHandle>,
-    anchor_handle: RigidBodyHandle,
-    joint_map: HashMap<NodeId, ImpulseJointHandle>,
     node_registry: Rc<RefCell<NodeRegistry>>, // 共有状態
     edge_joint_handles: Vec<ImpulseJointHandle>,
     force_settings: ForceSettings,
@@ -66,14 +64,7 @@ impl PhysicsWorld {
         let mut colliders = ColliderSet::new();
         let mut impulse_joints = ImpulseJointSet::new();
         let mut body_map = HashMap::new();
-        let mut joint_map = HashMap::new();
         let mut edge_joint_handles = Vec::new();
-
-        // アンカー剛体を作成 (画面中央に固定)
-        let anchor_rigid_body = RigidBodyBuilder::fixed()
-            .position(viewport.screen_to_physics(&Position { x: 400, y: 400 }))
-            .build();
-        let anchor_handle = bodies.insert(anchor_rigid_body);
 
         for (id, pos) in &registry.positions {
             let radius = registry.radii.get(id).copied().unwrap_or(30);
@@ -92,26 +83,6 @@ impl PhysicsWorld {
             colliders.insert_with_parent(collider, handle, &mut bodies);
 
             body_map.insert(*id, handle);
-
-            // アンカーとノードの間にバネジョイントを作成
-            let joint_params = SpringJointBuilder::new(
-                0.0,       // 自然長 (rest_length)
-                force_settings.anchor_strength, // バネ定数 (stiffness)
-                300000.0,  // 減衰係数 (damping)
-            )
-            .local_anchor1(point![0.0, 0.0]) // アンカー側の接続点
-            .local_anchor2(point![0.0, 0.0]) // ノード側の接続点
-            .build();
-
-            // ジョイント追加
-            let joint_handle = impulse_joints.insert(
-                anchor_handle,
-                handle,
-                joint_params,
-                true, // wake_up the bodies
-            );
-
-            joint_map.insert(*id, joint_handle);
         }
 
         // ノード間のリンクに対するスプリングジョイントを追加
@@ -142,11 +113,34 @@ impl PhysicsWorld {
             multibody_joints: MultibodyJointSet::new(),
             ccd_solver: CCDSolver::new(),
             body_map,
-            anchor_handle,
-            joint_map,
             node_registry: Rc::clone(&node_registry),
             edge_joint_handles,
             force_settings,
+        }
+    }
+
+    // 各ノードに中心へ向かう力を適用（固定中心: 画面中央近傍）
+    fn apply_center_forces(&mut self, _viewport: &Viewport) {
+        // 固定中心（既存実装に合わせ 400,400 を使用）
+        let center = Position { x: 400, y: 400 };
+        let dt = self.integration_parameters.dt;
+
+        for (id, handle) in self.body_map.clone() {
+            if let Some(body) = self.bodies.get_mut(handle) {
+                if let Some(pos) = self.node_registry.borrow().positions.get(&id) {
+                    let dx = (center.x - pos.x) as f32;
+                    let dy = (center.y - pos.y) as f32;
+                    let v = body.linvel();
+
+                    let fx = self.force_settings.center_strength * dx
+                        - self.force_settings.center_damping * v.x;
+                    let fy = self.force_settings.center_strength * dy
+                        - self.force_settings.center_damping * v.y;
+
+                    let impulse = vector![fx * dt, fy * dt];
+                    body.apply_impulse(impulse, true);
+                }
+            }
         }
     }
 
@@ -216,6 +210,8 @@ impl PhysicsWorld {
 
         self.integration_parameters.dt = 1.0 / 12.0;
 
+        // 中心力を適用
+        self.apply_center_forces(viewport);
         // 反発力を適用
         self.apply_repulsion_forces(viewport);
 
