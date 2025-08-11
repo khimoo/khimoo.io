@@ -31,6 +31,30 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
             50,
             NodeContent::Text("hello".to_string()),
         );
+        reg.add_node(
+            NodeId(2),
+            Position { x: 350, y: 200 },
+            40,
+            NodeContent::Text("記事A".to_string()),
+        );
+        reg.add_node(
+            NodeId(3),
+            Position { x: 500, y: 300 },
+            40,
+            NodeContent::Text("記事B".to_string()),
+        );
+        reg.add_node(
+            NodeId(4),
+            Position { x: 650, y: 180 },
+            40,
+            NodeContent::Text("記事C".to_string()),
+        );
+        // 関連リンク
+        reg.add_edge(NodeId(0), NodeId(1));
+        reg.add_edge(NodeId(1), NodeId(2));
+        reg.add_edge(NodeId(2), NodeId(3));
+        reg.add_edge(NodeId(3), NodeId(4));
+        reg.add_edge(NodeId(0), NodeId(4));
         Rc::new(RefCell::new(reg))
     });
 
@@ -106,6 +130,30 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
                 <h1>{"node_graph"}</h1>
                 <p>{ format!("{:?}", *viewport)}</p>
                 <p>{ format!("{:?}", props.container_bound)}</p>
+                {{
+                    // 背景のエッジ描画
+                    let reg = node_registry.borrow();
+                    html!{
+                        <svg style="position: absolute; left: 0; top: 0; width: 100vw; height: 100vh; z-index: 1; pointer-events: none;">
+                            {
+                                reg.iter_edges().filter_map(|(a, b)| {
+                                    let p1 = reg.positions.get(a)?;
+                                    let p2 = reg.positions.get(b)?;
+                                    Some(html!{
+                                        <line
+                                            x1={p1.x.to_string()}
+                                            y1={p1.y.to_string()}
+                                            x2={p2.x.to_string()}
+                                            y2={p2.y.to_string()}
+                                            stroke="#8a8a8a"
+                                            stroke-width="1.5"
+                                        />
+                                    })
+                                }).collect::<Html>()
+                            }
+                        </svg>
+                    }
+                }}
                 {
                     node_registry.borrow().iter().map(|(id, pos, radius, content)| {
                         let on_mouse_down = {

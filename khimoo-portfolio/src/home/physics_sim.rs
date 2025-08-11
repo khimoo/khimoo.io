@@ -55,6 +55,7 @@ pub struct PhysicsWorld {
     anchor_handle: RigidBodyHandle,
     joint_map: HashMap<NodeId, ImpulseJointHandle>,
     node_registry: Rc<RefCell<NodeRegistry>>, // 共有状態
+    edge_joint_handles: Vec<ImpulseJointHandle>,
 }
 
 impl PhysicsWorld {
@@ -65,6 +66,7 @@ impl PhysicsWorld {
         let mut impulse_joints = ImpulseJointSet::new();
         let mut body_map = HashMap::new();
         let mut joint_map = HashMap::new();
+        let mut edge_joint_handles = Vec::new();
 
         // アンカー剛体を作成 (画面中央に固定)
         let anchor_rigid_body = RigidBodyBuilder::fixed()
@@ -109,6 +111,22 @@ impl PhysicsWorld {
             joint_map.insert(*id, joint_handle);
         }
 
+        // ノード間のリンクに対するスプリングジョイントを追加
+        for (from, to) in &registry.edges {
+            if let (Some(&a), Some(&b)) = (body_map.get(from), body_map.get(to)) {
+                let joint_params = SpringJointBuilder::new(
+                    0.0,     // 自然長
+                    5000.0,  // バネ定数（アンカーより弱め）
+                    200.0,   // 減衰
+                )
+                .local_anchor1(point![0.0, 0.0])
+                .local_anchor2(point![0.0, 0.0])
+                .build();
+                let h = impulse_joints.insert(a, b, joint_params, true);
+                edge_joint_handles.push(h);
+            }
+        }
+
         Self {
             gravity: vector![0.0, 0.0],
             integration_parameters: IntegrationParameters::default(),
@@ -124,6 +142,7 @@ impl PhysicsWorld {
             anchor_handle,
             joint_map,
             node_registry: Rc::clone(&node_registry),
+            edge_joint_handles,
         }
     }
 

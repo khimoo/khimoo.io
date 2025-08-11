@@ -65,6 +65,7 @@ pub struct NodeRegistry {
     pub positions: HashMap<NodeId, Position>,
     pub radii: HashMap<NodeId, i32>,
     pub contents: HashMap<NodeId, NodeContent>,
+    pub edges: Vec<(NodeId, NodeId)>,
 }
 
 impl NodeRegistry {
@@ -73,6 +74,7 @@ impl NodeRegistry {
             positions: HashMap::new(),
             radii: HashMap::new(),
             contents: HashMap::new(),
+            edges: Vec::new(),
         }
     }
 
@@ -88,5 +90,13 @@ impl NodeRegistry {
             let content = self.contents.get(id)?;
             Some((id, pos, radius, content))
         })
+    }
+
+    pub fn add_edge(&mut self, from: NodeId, to: NodeId) {
+        self.edges.push((from, to));
+    }
+
+    pub fn iter_edges(&self) -> impl Iterator<Item = &(NodeId, NodeId)> {
+        self.edges.iter()
     }
 }
