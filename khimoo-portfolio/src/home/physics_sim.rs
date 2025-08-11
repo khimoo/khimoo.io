@@ -79,6 +79,8 @@ impl PhysicsWorld {
             let radius = registry.radii.get(id).copied().unwrap_or(30);
             // ノード剛体の作成
             let rigid_body = RigidBodyBuilder::dynamic()
+                .linear_damping(3.0)   // 全身等方粘性（並進）
+                .angular_damping(6.0)  // 全身等方粘性（回転）
                 .position(viewport.screen_to_physics(pos))
                 .build();
             let handle = bodies.insert(rigid_body);

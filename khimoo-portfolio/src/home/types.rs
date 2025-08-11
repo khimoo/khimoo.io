@@ -13,7 +13,7 @@ impl Default for ForceSettings {
     fn default() -> Self {
         Self {
             repulsion_strength: 50000.0,
-            repulsion_min_distance: 100.0,
+            repulsion_min_distance: 500.0,
             anchor_strength: 10000.0,
             link_strength: 5000.0,
         }
