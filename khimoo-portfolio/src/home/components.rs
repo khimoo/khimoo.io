@@ -24,31 +24,31 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
         let mut reg = NodeRegistry::new();
         reg.add_node(
             NodeId(0),
-            Position { x: 100, y: 150 },
+            Position { x: 100.0, y: 150.0 },
             30,
             NodeContent::Text("node 0".to_string()),
         );
         reg.add_node(
             NodeId(1),
-            Position { x: 200, y: 250 },
+            Position { x: 200.0, y: 250.0 },
             50,
             NodeContent::Text("hello".to_string()),
         );
         reg.add_node(
             NodeId(2),
-            Position { x: 350, y: 200 },
+            Position { x: 350.0, y: 200.0 },
             40,
             NodeContent::Text("記事A".to_string()),
         );
         reg.add_node(
             NodeId(3),
-            Position { x: 500, y: 300 },
+            Position { x: 500.0, y: 300.0 },
             40,
             NodeContent::Text("記事B".to_string()),
         );
         reg.add_node(
             NodeId(4),
-            Position { x: 650, y: 180 },
+            Position { x: 650.0, y: 180.0 },
             40,
             NodeContent::Text("記事C".to_string()),
         );
@@ -66,6 +66,7 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
             Rc::clone(&node_registry),
             &viewport,
             *force_settings,
+            props.container_bound.clone(),
         )))
     });
 
@@ -82,6 +83,19 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
         );
     }
 
+    // コンテナ境界が変更されたらPhysicsWorldを更新
+    {
+        let physics_world = physics_world.clone();
+        let container_bound = props.container_bound.clone();
+        use_effect_update_with_deps(
+            move |_| {
+                physics_world.borrow_mut().update_container_bound(container_bound.clone());
+                || {}
+            },
+            props.container_bound.clone(),
+        );
+    }
+
     let scroll = use_window_scroll();
 
     let on_mouse_move = {
@@ -92,8 +106,8 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
             if let Some(id) = *dragged_node_id {
                 let mut world = physics_world.borrow_mut();
                 let screen_pos = Position {
-                    x: e.client_x() + scroll.0 as i32,
-                    y: e.client_y() + scroll.1 as i32,
+                    x: (e.client_x() + scroll.0 as i32) as f32,
+                    y: (e.client_y() + scroll.1 as i32) as f32,
                 };
                 world.set_node_position(id, &screen_pos, &viewport);
             }
@@ -132,7 +146,7 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
                 world.step(&viewport);
                 rerender.set(());
             },
-            16, // ~60fps
+            8, // ~120fps
         );
     }
 
@@ -283,10 +297,10 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
                                     let p2 = reg.positions.get(b)?;
                                     Some(html!{
                                         <line
-                                            x1={p1.x.to_string()}
-                                            y1={p1.y.to_string()}
-                                            x2={p2.x.to_string()}
-                                            y2={p2.y.to_string()}
+                                            x1={format!("{:.2}", p1.x)}
+                                            y1={format!("{:.2}", p1.y)}
+                                            x2={format!("{:.2}", p2.x)}
+                                            y2={format!("{:.2}", p2.y)}
                                             stroke="#8a8a8a"
                                             stroke-width="1.5"
                                         />

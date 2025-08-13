@@ -2,7 +2,7 @@
   description = "Yew development environment";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
     rust-overlay.url = "github:oxalica/rust-overlay";
     flake-utils.url = "github:numtide/flake-utils";
   };
@@ -18,11 +18,16 @@
           extensions = [ "rust-src" ];
           targets = [ "wasm32-unknown-unknown" ];
         };
+        # rust-analyzerを別途追加 (ツールチェーンと同じチャンネルから)
+        rustStable = pkgs.rust-bin.stable.latest.minimal.override {
+          extensions = [ "rust-analyzer" ];
+        };
       in
       {
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [
             rustToolchain
+            rustStable
             trunk             # Yew用WASMビルドツール
             wasm-bindgen-cli # WASMバインディング生成
             binaryen         # WASM最適化ツール

@@ -25,14 +25,14 @@ impl Viewport {
     }
 
     pub fn screen_to_physics(&self, screen_pos: &Position) -> Isometry<f32> {
-        let world_x = (screen_pos.x - self.offset.x) as f32 / self.scale;
-        let world_y = (screen_pos.y - self.offset.y) as f32 / self.scale;
+        let world_x = (screen_pos.x - self.offset.x) / self.scale;
+        let world_y = (screen_pos.y - self.offset.y) / self.scale;
         Isometry::new(vector![world_x, world_y], 0.0)
     }
 
     pub fn physics_to_screen(&self, physics_pos: &Isometry<f32>) -> Position {
-        let screen_x = (physics_pos.translation.x * self.scale) as i32 + self.offset.x;
-        let screen_y = (physics_pos.translation.y * self.scale) as i32 + self.offset.y;
+        let screen_x = physics_pos.translation.x * self.scale + self.offset.x;
+        let screen_y = physics_pos.translation.y * self.scale + self.offset.y;
         Position {
             x: screen_x,
             y: screen_y,
@@ -55,10 +55,11 @@ pub struct PhysicsWorld {
     node_registry: Rc<RefCell<NodeRegistry>>, // 共有状態
     edge_joint_handles: Vec<ImpulseJointHandle>,
     force_settings: ForceSettings,
+    container_bound: ContainerBound, // 追加: コンテナ境界を保持
 }
 
 impl PhysicsWorld {
-    pub fn new(node_registry: Rc<RefCell<NodeRegistry>>, viewport: &Viewport, force_settings: ForceSettings) -> Self {
+    pub fn new(node_registry: Rc<RefCell<NodeRegistry>>, viewport: &Viewport, force_settings: ForceSettings, container_bound: ContainerBound) -> Self {
         let registry = node_registry.borrow();
         let mut bodies = RigidBodySet::new();
         let mut colliders = ColliderSet::new();
@@ -116,13 +117,17 @@ impl PhysicsWorld {
             node_registry: Rc::clone(&node_registry),
             edge_joint_handles,
             force_settings,
+            container_bound, // 追加
         }
     }
 
-    // 各ノードに中心へ向かう力を適用（固定中心: 画面中央近傍）
+    // 各ノードに中心へ向かう力を適用（動的計算: ContainerBoundの中心）
     fn apply_center_forces(&mut self, _viewport: &Viewport) {
-        // 固定中心（既存実装に合わせ 400,400 を使用）
-        let center = Position { x: 400, y: 400 };
+        // ContainerBound の中心座標を動的に計算
+        let center = Position {
+            x: self.container_bound.x + self.container_bound.width / 2.0,
+            y: self.container_bound.y + self.container_bound.height / 2.0,
+        };
         let dt = self.integration_parameters.dt;
 
         for (id, handle) in self.body_map.clone() {
@@ -202,6 +207,11 @@ impl PhysicsWorld {
     // 力の設定を更新
     pub fn update_force_settings(&mut self, new_settings: ForceSettings) {
         self.force_settings = new_settings;
+    }
+
+    // コンテナ境界を更新
+    pub fn update_container_bound(&mut self, new_bound: ContainerBound) {
+        self.container_bound = new_bound;
     }
 
     pub fn step(&mut self, viewport: &Viewport) {

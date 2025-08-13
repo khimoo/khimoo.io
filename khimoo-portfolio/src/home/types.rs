@@ -22,22 +22,22 @@ impl Default for ForceSettings {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct Position {
-    pub x: i32,
-    pub y: i32,
+    pub x: f32,
+    pub y: f32,
 }
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct ContainerBound {
-    pub x: i32,
-    pub y: i32,
-    pub width: i32,
-    pub height: i32,
-    pub top: i32,
-    pub left: i32,
-    pub bottom: i32,
-    pub right: i32,
+    pub x: f32,
+    pub y: f32,
+    pub width: f32,
+    pub height: f32,
+    pub top: f32,
+    pub left: f32,
+    pub bottom: f32,
+    pub right: f32,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Default)]
