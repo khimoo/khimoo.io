@@ -1,53 +1,68 @@
 {
-  description = "Yew development environment";
+  description = "Interactive Mindmap Portfolio";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     rust-overlay.url = "github:oxalica/rust-overlay";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, rust-overlay, flake-utils, ... }:
+  outputs = { self, nixpkgs, rust-overlay, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         overlays = [ (import rust-overlay) ];
-        pkgs = import nixpkgs { inherit system overlays; };
-
-        # Rustツールチェーン (wasmターゲット付き)
-        rustToolchain = pkgs.rust-bin.stable.latest.default.override {
-          extensions = [ "rust-src" ];
-          targets = [ "wasm32-unknown-unknown" ];
+        pkgs = import nixpkgs {
+          inherit system overlays;
         };
-        # rust-analyzerを別途追加 (ツールチェーンと同じチャンネルから)
-        rustStable = pkgs.rust-bin.stable.latest.minimal.override {
-          extensions = [ "rust-analyzer" ];
+        
+        rustToolchain = pkgs.rust-bin.stable.latest.default.override {
+          extensions = [ "rust-src" "rust-analyzer" ];
+          targets = [ "wasm32-unknown-unknown" ];
         };
       in
       {
         devShells.default = pkgs.mkShell {
-          packages = with pkgs; [
+          buildInputs = with pkgs; [
+            # Rust toolchain
             rustToolchain
-            rustStable
-            trunk             # Yew用WASMビルドツール
-            wasm-bindgen-cli # WASMバインディング生成
-            binaryen         # WASM最適化ツール
-            openssl          # 暗号関連依存
-            pkg-config       # ネイティブライブラリ検出
-            gemini-cli
+            
+            # WebAssembly tools
+            wasm-pack
+            trunk
+            
+            # Development tools
+            watchexec
+            just
+            
+            # System dependencies
+            pkg-config
+            openssl
           ];
-
-          # 環境変数設定
-          env = {
-            RUST_BACKTRACE = "1";
-            PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
-          };
-
-          # Rustツールチェーンの自動選択
+          
           shellHook = ''
-            echo "Rust $(rustc --version)"
-            echo "Trunk $(trunk --version)"
+            echo "🦀 Rust WebAssembly development environment"
+            echo "📦 Available commands:"
+            echo "  just dev      - Start development server with file watching"
+            echo "  just build    - Build for production"
+            echo "  just process  - Process articles and generate data"
+            echo "  just validate - Validate links and content"
+            echo "  just clean    - Clean generated files"
           '';
         };
-      }
-    );
+        
+        packages.default = pkgs.rustPlatform.buildRustPackage {
+          pname = "khimoo-portfolio";
+          version = "0.1.0";
+          src = ./.;
+          cargoLock.lockFile = ./Cargo.lock;
+          
+          buildInputs = with pkgs; [ pkg-config openssl ];
+          
+          # WebAssembly build
+          buildPhase = ''
+            cargo build --release
+            wasm-pack build --target web --out-dir pkg
+          '';
+        };
+      });
 }
