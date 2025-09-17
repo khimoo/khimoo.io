@@ -198,7 +198,7 @@ impl DataLoader {
                 // Fallback to empty data structure
                 Ok(ArticlesData {
                     articles: Vec::new(),
-                    generated_at: chrono::Utc::now().to_rfc3339(),
+                    generated_at: "1970-01-01T00:00:00Z".to_string(),
                     total_count: 0,
                     home_articles: Vec::new(),
                 })
@@ -217,7 +217,7 @@ impl DataLoader {
                 // Fallback to empty graph structure
                 Ok(LinkGraphData {
                     graph: HashMap::new(),
-                    generated_at: chrono::Utc::now().to_rfc3339(),
+                    generated_at: "1970-01-01T00:00:00Z".to_string(),
                     total_connections: 0,
                     bidirectional_pairs: Some(0),
                     direct_links: Some(0),

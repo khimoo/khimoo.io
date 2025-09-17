@@ -1,5 +1,5 @@
 use super::data_loader::{ArticlesData, LinkGraphData, ProcessedArticle, LightweightArticle, DataLoadError, DataLoader};
-use super::types::{NodeId, NodeContent, Position, NodeRegistry};
+use super::types::{NodeId, NodeContent, Position, NodeRegistry, AUTHOR_NODE_ID, ConnectionLineType};
 use std::collections::HashMap;
 use yew::prelude::*;
 
@@ -64,7 +64,8 @@ impl ArticleManager {
             self.link_graph.insert(slug, connections);
         }
 
-        // Assign node IDs to home articles
+        // Assign node IDs to home articles (start from 1 since 0 is reserved for author)
+        self.next_node_id = 1; // Reserve 0 for author node
         for slug in &self.home_articles {
             if self.lightweight_articles.contains_key(slug) {
                 let node_id = NodeId(self.next_node_id);
@@ -104,7 +105,8 @@ impl ArticleManager {
             self.link_graph.insert(slug, connections);
         }
 
-        // Assign node IDs to home articles
+        // Assign node IDs to home articles (start from 1 since 0 is reserved for author)
+        self.next_node_id = 1; // Reserve 0 for author node
         for slug in &self.home_articles {
             if self.lightweight_articles.contains_key(slug) {
                 let node_id = NodeId(self.next_node_id);
@@ -214,33 +216,64 @@ impl ArticleManager {
     pub fn create_node_registry(&self) -> NodeRegistry {
         let mut registry = NodeRegistry::new();
 
-        // Add nodes for home articles (use lightweight data for efficiency)
+        // Add author node at the center (NodeId 0 is reserved for author)
+        let center_pos = Position { x: 400.0, y: 300.0 };
+        registry.add_author_node(
+            center_pos,
+            "Khimoo".to_string(), // TODO: Make this configurable
+            "/assets/profile.jpg".to_string(), // TODO: Make this configurable
+            Some("Software Developer & Tech Enthusiast".to_string()) // TODO: Make this configurable
+        );
+
+        // Add nodes for home articles (start from NodeId 1 since 0 is author)
         for (i, slug) in self.home_articles.iter().enumerate() {
             if let Some(article) = self.lightweight_articles.get(slug) {
-                let node_id = NodeId(i as u32);
+                let node_id = NodeId((i + 1) as u32); // +1 to skip author node ID
                 
-                // Calculate node size based on importance and inbound links
-                let base_size = 30;
-                let importance_multiplier = article.metadata.importance.unwrap_or(3) as i32;
-                let inbound_multiplier = (article.inbound_count as f32).sqrt() as i32;
-                let radius = base_size + (importance_multiplier * 5) + (inbound_multiplier * 3);
+                // Calculate node size dynamically based on importance and inbound links
+                let radius = registry.calculate_dynamic_radius(
+                    node_id, 
+                    article.metadata.importance, 
+                    article.inbound_count
+                );
 
                 // Create node content
                 let content = NodeContent::Text(article.title.clone());
 
-                // Position nodes in a rough circle initially
-                let angle = (i as f32) * 2.0 * std::f32::consts::PI / (self.home_articles.len() as f32);
-                let distance = 200.0;
+                // Position nodes in a circle around the author node, but group by category
+                let category = article.metadata.category.clone().unwrap_or_else(|| "default".to_string());
+                let category_offset = self.get_category_angle_offset(&category);
+                let angle = (i as f32) * 2.0 * std::f32::consts::PI / (self.home_articles.len() as f32) + category_offset;
+                let distance = 250.0; // Distance from author node
                 let pos = Position {
-                    x: 400.0 + distance * angle.cos(),
-                    y: 300.0 + distance * angle.sin(),
+                    x: center_pos.x + distance * angle.cos(),
+                    y: center_pos.y + distance * angle.sin(),
                 };
 
                 registry.add_node(node_id, pos, radius, content);
+                
+                // Set category for the node
+                registry.set_node_category(node_id, category);
+                
+                // Note: slug to node ID mapping is handled in load_from_data method
             }
         }
 
-        // Add edges based on link graph
+        // Add edges from author to all article nodes (author as central hub)
+        for (i, _slug) in self.home_articles.iter().enumerate() {
+            let article_node_id = NodeId((i + 1) as u32);
+            registry.add_edge(AUTHOR_NODE_ID, article_node_id);
+            
+            // Add connection line for author to article
+            registry.add_connection_line(
+                AUTHOR_NODE_ID, 
+                article_node_id, 
+                ConnectionLineType::AuthorToArticle, 
+                2000.0
+            );
+        }
+
+        // Add edges based on link graph (between article nodes)
         for (from_slug, connections) in &self.link_graph {
             if let Some(from_node_id) = self.slug_to_node_id.get(from_slug) {
                 for to_slug in connections {
@@ -248,6 +281,27 @@ impl ArticleManager {
                         // Only add edge if both nodes are in home articles
                         if self.is_home_article(from_slug) && self.is_home_article(to_slug) {
                             registry.add_edge(*from_node_id, *to_node_id);
+                            
+                            // Check if this is a bidirectional link
+                            let is_bidirectional = self.link_graph
+                                .get(to_slug)
+                                .map_or(false, |reverse_connections| reverse_connections.contains(from_slug));
+                            
+                            let connection_type = if is_bidirectional {
+                                ConnectionLineType::Bidirectional
+                            } else {
+                                ConnectionLineType::DirectLink
+                            };
+                            
+                            let strength = if is_bidirectional { 8000.0 * 1.5 } else { 8000.0 };
+                            
+                            // Add connection line for direct link
+                            registry.add_connection_line(
+                                *from_node_id, 
+                                *to_node_id, 
+                                connection_type, 
+                                strength
+                            );
                         }
                     }
                 }
@@ -255,6 +309,54 @@ impl ArticleManager {
         }
 
         registry
+    }
+
+    // Helper method to get angle offset for category clustering
+    fn get_category_angle_offset(&self, category: &str) -> f32 {
+        // Create consistent angle offsets for different categories
+        match category {
+            "programming" => 0.0,
+            "web" => std::f32::consts::PI / 3.0,      // 60 degrees
+            "rust" => 2.0 * std::f32::consts::PI / 3.0, // 120 degrees
+            "design" => std::f32::consts::PI,         // 180 degrees
+            "tutorial" => 4.0 * std::f32::consts::PI / 3.0, // 240 degrees
+            _ => 5.0 * std::f32::consts::PI / 3.0,    // 300 degrees for default
+        }
+    }
+
+    // Get node sizing data for physics system updates
+    pub fn get_node_sizing_data(&self) -> HashMap<NodeId, (Option<u8>, usize)> {
+        let mut sizing_data = HashMap::new();
+        
+        // Add author node (fixed size)
+        sizing_data.insert(AUTHOR_NODE_ID, (Some(5), 0)); // Max importance, no inbound links
+        
+        // Add article nodes
+        for (slug, node_id) in &self.slug_to_node_id {
+            if let Some(article) = self.lightweight_articles.get(slug) {
+                sizing_data.insert(*node_id, (article.metadata.importance, article.inbound_count));
+            }
+        }
+        
+        sizing_data
+    }
+
+    // Update node sizes based on current data (for dynamic updates)
+    pub fn update_node_sizes(&self, registry: &mut NodeRegistry) {
+        // Update author node (always fixed size)
+        registry.update_node_radius(AUTHOR_NODE_ID, 60);
+        
+        // Update article nodes
+        for (slug, node_id) in &self.slug_to_node_id {
+            if let Some(article) = self.lightweight_articles.get(slug) {
+                let new_radius = registry.calculate_dynamic_radius(
+                    *node_id,
+                    article.metadata.importance,
+                    article.inbound_count
+                );
+                registry.update_node_radius(*node_id, new_radius);
+            }
+        }
     }
 
     // Get lightweight articles by category

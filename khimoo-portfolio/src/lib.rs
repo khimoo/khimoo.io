@@ -1,7 +1,11 @@
 pub mod home;
+
+// Only include article_processing for non-WASM targets
+#[cfg(not(target_arch = "wasm32"))]
 pub mod article_processing;
 
-// Re-export commonly used types
+// Re-export commonly used types (only for non-WASM)
+#[cfg(not(target_arch = "wasm32"))]
 pub use article_processing::{
     ArticleMetadata, 
     ExtractedLink, 
@@ -10,7 +14,7 @@ pub use article_processing::{
     FrontMatterParser
 };
 
-#[cfg(test)]
+#[cfg(all(test, not(target_arch = "wasm32")))]
 mod integration_tests {
     use super::*;
 
