@@ -33,6 +33,7 @@
             binaryen         # WASM最適化ツール
             openssl          # 暗号関連依存
             pkg-config       # ネイティブライブラリ検出
+            gemini-cli
           ];
 
           # 環境変数設定
