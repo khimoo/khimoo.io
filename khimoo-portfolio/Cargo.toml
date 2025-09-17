@@ -3,9 +3,7 @@ name = "khimoo-portfolio"
 version = "0.1.0"
 edition = "2021"
 
-[features]
-default = []
-cli-tools = []
+
 
 # Main application
 [[bin]]
@@ -59,6 +57,10 @@ chrono = { version = "0.4", features = ["serde"] }
 # CLI tools dependencies (optional)
 notify = { version = "6.0", optional = true }
 walkdir = { version = "2.3", optional = true }
+
+[features]
+default = []
+cli-tools = ["notify", "walkdir"]
 
 # Target-specific dependencies
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]

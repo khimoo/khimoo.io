@@ -1,102 +1,89 @@
 {
   "graph": {
-    "rust-async": {
-      "connections": [
-        {
-          "target": "tokio-basics",
-          "connection_type": "Bidirectional",
-          "bidirectional": true,
-          "link_count": 1
-        },
-        {
-          "target": "hello",
-          "connection_type": "Bidirectional",
-          "bidirectional": true,
-          "link_count": 1
-        },
-        {
-          "target": "async-patterns",
-          "connection_type": "Bidirectional",
-          "bidirectional": true,
-          "link_count": 1
-        }
-      ],
-      "inbound_count": 4,
-      "outbound_count": 3
-    },
-    "async-patterns": {
-      "connections": [
-        {
-          "target": "tokio-basics",
-          "connection_type": "DirectLink",
-          "bidirectional": false,
-          "link_count": 1
-        },
-        {
-          "target": "rust-async",
-          "connection_type": "Bidirectional",
-          "bidirectional": true,
-          "link_count": 1
-        }
-      ],
-      "inbound_count": 1,
-      "outbound_count": 2
-    },
     "tokio-basics": {
       "connections": [
         {
           "target": "rust-async",
           "connection_type": "Bidirectional",
-          "bidirectional": true,
-          "link_count": 2
-        }
-      ],
-      "inbound_count": 2,
-      "outbound_count": 2
-    },
-    "readme": {
-      "connections": [],
-      "inbound_count": 0,
-      "outbound_count": 0
-    },
-    "hello": {
-      "connections": [
-        {
-          "target": "web-development",
-          "connection_type": "Bidirectional",
-          "bidirectional": true,
-          "link_count": 1
+          "bidirectional": true
         },
         {
           "target": "rust-async",
           "connection_type": "Bidirectional",
-          "bidirectional": true,
-          "link_count": 1
+          "bidirectional": true
         }
       ],
-      "inbound_count": 2,
-      "outbound_count": 2
+      "inbound_count": 2
+    },
+    "readme": {
+      "connections": [],
+      "inbound_count": 0
+    },
+    "rust-async": {
+      "connections": [
+        {
+          "target": "tokio-basics",
+          "connection_type": "Bidirectional",
+          "bidirectional": true
+        },
+        {
+          "target": "async-patterns",
+          "connection_type": "Bidirectional",
+          "bidirectional": true
+        },
+        {
+          "target": "hello",
+          "connection_type": "Bidirectional",
+          "bidirectional": true
+        }
+      ],
+      "inbound_count": 4
+    },
+    "async-patterns": {
+      "connections": [
+        {
+          "target": "rust-async",
+          "connection_type": "Bidirectional",
+          "bidirectional": true
+        },
+        {
+          "target": "tokio-basics",
+          "connection_type": "DirectLink",
+          "bidirectional": false
+        }
+      ],
+      "inbound_count": 1
     },
     "broken-link-test": {
       "connections": [],
-      "inbound_count": 0,
-      "outbound_count": 2
+      "inbound_count": 0
     },
     "web-development": {
       "connections": [
         {
           "target": "hello",
           "connection_type": "Bidirectional",
-          "bidirectional": true,
-          "link_count": 1
+          "bidirectional": true
         }
       ],
-      "inbound_count": 1,
-      "outbound_count": 1
+      "inbound_count": 1
+    },
+    "hello": {
+      "connections": [
+        {
+          "target": "rust-async",
+          "connection_type": "Bidirectional",
+          "bidirectional": true
+        },
+        {
+          "target": "web-development",
+          "connection_type": "Bidirectional",
+          "bidirectional": true
+        }
+      ],
+      "inbound_count": 2
     }
   },
-  "generated_at": "2025-09-17T14:00:42.377323457+00:00",
-  "total_connections": 9,
-  "bidirectional_pairs": 4,
-  "direct_links": 1
+  "generated_at": "2025-09-17T16:46:45.400850555+00:00",
+  "total_connections": 10
 }

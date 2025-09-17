@@ -155,6 +155,21 @@ impl PhysicsWorld {
             x: self.container_bound.x + self.container_bound.width / 2.0,
             y: self.container_bound.y + self.container_bound.height / 2.0,
         };
+        
+        // デバッグ情報をコンソールに出力（最初の数回のみ）
+        static mut DEBUG_COUNT: i32 = 0;
+        unsafe {
+            if DEBUG_COUNT < 5 {
+                web_sys::console::log_1(&format!(
+                    "Center force calculation - Container: ({}, {}, {}x{}), Center: ({}, {})",
+                    self.container_bound.x, self.container_bound.y,
+                    self.container_bound.width, self.container_bound.height,
+                    center.x, center.y
+                ).into());
+                DEBUG_COUNT += 1;
+            }
+        }
+        
         let dt = self.integration_parameters.dt;
 
         for (id, handle) in self.body_map.clone() {
@@ -294,6 +309,10 @@ impl PhysicsWorld {
 
     // コンテナ境界を更新
     pub fn update_container_bound(&mut self, new_bound: ContainerBound) {
+        web_sys::console::log_1(&format!(
+            "Updating container bound: ({}, {}, {}x{})",
+            new_bound.x, new_bound.y, new_bound.width, new_bound.height
+        ).into());
         self.container_bound = new_bound;
     }
 

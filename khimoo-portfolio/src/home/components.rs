@@ -1,11 +1,101 @@
 use super::physics_sim::{PhysicsWorld, Viewport};
 use super::types::*;
+use super::data_loader::{use_articles_data, ArticlesData};
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::rc::Rc;
+use wasm_bindgen::JsCast;
 use yew::prelude::*;
-use yew_hooks::{use_interval, use_window_scroll, UseMeasureState, use_effect_update_with_deps};
-use web_sys::Event;
-use web_sys::wasm_bindgen::JsCast;
+use yew_hooks::{use_effect_update_with_deps, use_interval, use_window_scroll, UseMeasureState};
+
+// ArticlesDataからNodeRegistryを生成する関数
+fn create_node_registry_from_articles(articles_data: &ArticlesData, container_bound: &ContainerBound) -> NodeRegistry {
+    let mut reg = NodeRegistry::new();
+    let mut slug_to_id = HashMap::new();
+    let mut next_id = 1u32;
+    
+    // コンテナの中心を計算
+    let center_x = container_bound.width / 2.0;
+    let center_y = container_bound.height / 2.0;
+    
+    // デバッグ情報
+    web_sys::console::log_1(&format!("Container bound in create_node_registry: {:?}", container_bound).into());
+    web_sys::console::log_1(&format!("Calculated center: ({}, {})", center_x, center_y).into());
+    
+    // 作者ノードを追加（ID 0は作者用に予約）
+    reg.add_node(
+        NodeId(0),
+        Position { x: center_x, y: center_y }, // コンテナ中央に配置
+        40,
+        NodeContent::Text("Author".to_string()),
+    );
+    reg.set_node_importance(NodeId(0), 5); // 最高重要度
+    reg.set_node_inbound_count(NodeId(0), 0);
+    slug_to_id.insert("author".to_string(), NodeId(0));
+    
+    // home_display=trueの記事のみをノードとして追加
+    let home_articles: Vec<_> = articles_data.articles.iter()
+        .filter(|article| article.metadata.home_display)
+        .collect();
+    
+    // デバッグ情報をコンソールに出力
+    web_sys::console::log_1(&format!("Total articles: {}", articles_data.articles.len()).into());
+    web_sys::console::log_1(&format!("Home articles count: {}", home_articles.len()).into());
+    for article in &home_articles {
+        web_sys::console::log_1(&format!("Home article: {} ({})", article.title, article.slug).into());
+    }
+    
+    // home_articlesが空の場合は作者ノードのみ返す
+    if home_articles.is_empty() {
+        web_sys::console::warn_1(&"No home articles found!".into());
+        return reg;
+    }
+    
+    // 円形にノードを配置するための計算（コンテナサイズに基づく）
+    let radius = (container_bound.width.min(container_bound.height) * 0.3).max(150.0); // コンテナサイズの30%、最小150px
+    let angle_step = 2.0 * std::f32::consts::PI / home_articles.len() as f32;
+    
+    for (index, article) in home_articles.iter().enumerate() {
+        let angle = index as f32 * angle_step;
+        let x = center_x + radius * angle.cos();
+        let y = center_y + radius * angle.sin();
+        
+        let node_id = NodeId(next_id);
+        reg.add_node(
+            node_id,
+            Position { x, y },
+            30, // ベースサイズ
+            NodeContent::Text(article.title.clone()),
+        );
+        
+        // 重要度とリンク数を設定
+        reg.set_node_importance(node_id, article.metadata.importance.unwrap_or(3));
+        reg.set_node_inbound_count(node_id, article.inbound_count);
+        
+        slug_to_id.insert(article.slug.clone(), node_id);
+        next_id += 1;
+    }
+    
+    // 作者ノードから全記事への接続を追加
+    for (_, &article_id) in &slug_to_id {
+        if article_id.0 != 0 { // 作者ノード以外
+            reg.add_edge(NodeId(0), article_id);
+        }
+    }
+    
+    // 記事間のリンクを追加
+    for article in &home_articles {
+        if let Some(&from_id) = slug_to_id.get(&article.slug) {
+            for link in &article.outbound_links {
+                if let Some(&to_id) = slug_to_id.get(&link.target_slug) {
+                    reg.add_edge(from_id, to_id);
+                }
+            }
+        }
+    }
+    
+    reg
+}
 
 #[derive(Properties, PartialEq)]
 pub struct NodeGraphContainerProps {
@@ -20,73 +110,43 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
     let viewport = use_state(Viewport::default);
     let force_settings = use_state(ForceSettings::default);
 
-    let node_registry = use_state(|| {
-        let mut reg = NodeRegistry::new();
+    // データローダーを使用して記事データを取得
+    let (articles_data, loading, error) = use_articles_data();
         
-        // サンプルノードを追加（重要度とリンク数の情報付き）
-        reg.add_node(
-            NodeId(0),
-            Position { x: 100.0, y: 150.0 },
-            30,
-            NodeContent::Text("Author".to_string()),
-        );
-        reg.set_node_importance(NodeId(0), 5); // 最高重要度
-        reg.set_node_inbound_count(NodeId(0), 0);
-        
-        reg.add_node(
-            NodeId(1),
-            Position { x: 200.0, y: 250.0 },
-            30,
-            NodeContent::Text("Hello World".to_string()),
-        );
-        reg.set_node_importance(NodeId(1), 4); // 高重要度
-        reg.set_node_inbound_count(NodeId(1), 2);
-        
-        reg.add_node(
-            NodeId(2),
-            Position { x: 350.0, y: 200.0 },
-            30,
-            NodeContent::Text("Rust Async".to_string()),
-        );
-        reg.set_node_importance(NodeId(2), 4); // 高重要度
-        reg.set_node_inbound_count(NodeId(2), 3);
-        
-        reg.add_node(
-            NodeId(3),
-            Position { x: 500.0, y: 300.0 },
-            30,
-            NodeContent::Text("Tokio Basics".to_string()),
-        );
-        reg.set_node_importance(NodeId(3), 3); // 中重要度
-        reg.set_node_inbound_count(NodeId(3), 2);
-        
-        reg.add_node(
-            NodeId(4),
-            Position { x: 650.0, y: 180.0 },
-            30,
-            NodeContent::Text("Web Dev".to_string()),
-        );
-        reg.set_node_importance(NodeId(4), 2); // 低重要度
-        reg.set_node_inbound_count(NodeId(4), 1);
-        
-        // 関連リンク
-        reg.add_edge(NodeId(0), NodeId(1));
-        reg.add_edge(NodeId(1), NodeId(2));
-        reg.add_edge(NodeId(2), NodeId(3));
-        reg.add_edge(NodeId(3), NodeId(4));
-        reg.add_edge(NodeId(0), NodeId(4));
-        
-        Rc::new(RefCell::new(reg))
-    });
-
+    // 記事データが読み込まれたらノードレジストリと物理世界を一度だけ初期化
+    let node_registry = use_state(|| Rc::new(RefCell::new(NodeRegistry::new())));
     let physics_world = use_state(|| {
+        let empty_registry = Rc::new(RefCell::new(NodeRegistry::new()));
+        // 初期化時はデフォルトのContainerBoundを使用（後で更新される）
+        let default_bound = ContainerBound::default();
         Rc::new(RefCell::new(PhysicsWorld::new(
-            Rc::clone(&node_registry),
+            empty_registry,
             &viewport,
             *force_settings,
-            props.container_bound.clone(),
+            default_bound,
         )))
     });
+
+    // 記事データが初回読み込まれた時のみ初期化（静的データなので一度だけ）
+    let initialized = use_state(|| false);
+    if let Some(data) = articles_data.as_ref() {
+        if !*initialized {
+            web_sys::console::log_1(&format!("Initializing with container_bound: {:?}", props.container_bound).into());
+            
+            let new_registry = create_node_registry_from_articles(data, &props.container_bound);
+            let registry_rc = Rc::new(RefCell::new(new_registry));
+            node_registry.set(Rc::clone(&registry_rc));
+            
+            let new_physics_world = PhysicsWorld::new(
+                registry_rc,
+                &viewport,
+                *force_settings,
+                props.container_bound.clone(),
+            );
+            physics_world.set(Rc::new(RefCell::new(new_physics_world)));
+            initialized.set(true);
+        }
+    }
 
     // 力の設定が変更されたらPhysicsWorldを更新
     {
@@ -104,9 +164,9 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
     // コンテナ境界が変更されたらPhysicsWorldを更新
     {
         let physics_world = physics_world.clone();
-        let container_bound = props.container_bound.clone();
         use_effect_update_with_deps(
-            move |_| {
+            move |container_bound| {
+                web_sys::console::log_1(&format!("Container bound changed in effect: {:?}", container_bound).into());
                 physics_world.borrow_mut().update_container_bound(container_bound.clone());
                 || {}
             },
@@ -225,16 +285,44 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
         })
     };
 
+    // ローディング中やエラー時の表示
+    if *loading {
+        return html! {
+            <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background: #f0f0f0;">
+                <div style="text-align: center;">
+                    <h2>{"記事データを読み込み中..."}</h2>
+                    <div style="margin-top: 20px;">
+                        <div style="border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 2s linear infinite; margin: 0 auto;"></div>
+                    </div>
+                </div>
+            </div>
+        };
+    }
+
+    if let Some(err) = error.as_ref() {
+        return html! {
+            <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background: #f0f0f0;">
+                <div style="text-align: center; color: #e74c3c;">
+                    <h2>{"データの読み込みに失敗しました"}</h2>
+                    <p>{format!("エラー: {}", err)}</p>
+                </div>
+            </div>
+        };
+    }
+
     html! {
         <>
+            <style>
+                {"@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }"}
+            </style>
             <div
                 style="position: static; width: 100vw; height: 100vh; background: #f0f0f0;"
                 onmousemove={on_mouse_move}
                 onmouseup={on_mouse_up}
                 ref={props.container_ref.clone()}
             >
-                <h1>{"node_graph"}</h1>
-                <p>{ format!("{:?}", *viewport)}</p>
+                <h1>{"Interactive Mindmap Portfolio"}</h1>
+                <p>{ format!("記事数: {}", node_registry.borrow().positions.len()) }</p>
                 <p>{ format!("{:?}", props.container_bound)}</p>
                 {{
                     // 力の設定UI

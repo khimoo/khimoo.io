@@ -8,13 +8,12 @@ default:
 dev:
     @echo "🚀 Starting development environment..."
     @just process-articles
-    @watchexec -w articles -e md -- just process-articles &
-    @trunk serve
+    @cd khimoo-portfolio && trunk serve
 
 # Process all articles
 process-articles:
     @echo "📝 Processing articles..."
-    @cargo run --bin process-articles
+    @cd khimoo-portfolio && cargo run --bin process-articles --features cli-tools
 
 # Validate links
 validate-links:
