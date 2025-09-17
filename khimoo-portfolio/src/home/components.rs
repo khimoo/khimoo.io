@@ -22,42 +22,60 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
 
     let node_registry = use_state(|| {
         let mut reg = NodeRegistry::new();
+        
+        // サンプルノードを追加（重要度とリンク数の情報付き）
         reg.add_node(
             NodeId(0),
             Position { x: 100.0, y: 150.0 },
             30,
-            NodeContent::Text("node 0".to_string()),
+            NodeContent::Text("Author".to_string()),
         );
+        reg.set_node_importance(NodeId(0), 5); // 最高重要度
+        reg.set_node_inbound_count(NodeId(0), 0);
+        
         reg.add_node(
             NodeId(1),
             Position { x: 200.0, y: 250.0 },
-            50,
-            NodeContent::Text("hello".to_string()),
+            30,
+            NodeContent::Text("Hello World".to_string()),
         );
+        reg.set_node_importance(NodeId(1), 4); // 高重要度
+        reg.set_node_inbound_count(NodeId(1), 2);
+        
         reg.add_node(
             NodeId(2),
             Position { x: 350.0, y: 200.0 },
-            40,
-            NodeContent::Text("記事A".to_string()),
+            30,
+            NodeContent::Text("Rust Async".to_string()),
         );
+        reg.set_node_importance(NodeId(2), 4); // 高重要度
+        reg.set_node_inbound_count(NodeId(2), 3);
+        
         reg.add_node(
             NodeId(3),
             Position { x: 500.0, y: 300.0 },
-            40,
-            NodeContent::Text("記事B".to_string()),
+            30,
+            NodeContent::Text("Tokio Basics".to_string()),
         );
+        reg.set_node_importance(NodeId(3), 3); // 中重要度
+        reg.set_node_inbound_count(NodeId(3), 2);
+        
         reg.add_node(
             NodeId(4),
             Position { x: 650.0, y: 180.0 },
-            40,
-            NodeContent::Text("記事C".to_string()),
+            30,
+            NodeContent::Text("Web Dev".to_string()),
         );
+        reg.set_node_importance(NodeId(4), 2); // 低重要度
+        reg.set_node_inbound_count(NodeId(4), 1);
+        
         // 関連リンク
         reg.add_edge(NodeId(0), NodeId(1));
         reg.add_edge(NodeId(1), NodeId(2));
         reg.add_edge(NodeId(2), NodeId(3));
         reg.add_edge(NodeId(3), NodeId(4));
         reg.add_edge(NodeId(0), NodeId(4));
+        
         Rc::new(RefCell::new(reg))
     });
 
@@ -312,6 +330,11 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
                 }}
                 {
                     node_registry.borrow().iter().map(|(id, pos, radius, content)| {
+                        let registry = node_registry.borrow();
+                        let importance = registry.get_node_importance(*id);
+                        let inbound_count = registry.get_node_inbound_count(*id);
+                        drop(registry);
+                        
                         let on_mouse_down = {
                             let on_mouse_down = on_mouse_down.clone();
                             let id = *id;
@@ -327,6 +350,8 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
                                 pos={*pos}
                                 radius={*radius}
                                 content={content.clone()}
+                                {importance}
+                                {inbound_count}
                                 {on_mouse_down}
                             />
                         }
@@ -344,10 +369,15 @@ pub struct NodeProps {
     pub radius: i32,
     pub content: NodeContent,
     pub on_mouse_down: Callback<MouseEvent>,
+    pub importance: Option<u8>,
+    pub inbound_count: usize,
 }
 
 #[function_component(NodeComponent)]
 fn node_component(props: &NodeProps) -> Html {
+    // 重要度とリンク数に基づいて動的にサイズを計算
+    let dynamic_radius = calculate_dynamic_radius(props.radius, props.importance, props.inbound_count);
+    
     html! {
         <div
             key={props.id.0.to_string()}
@@ -365,9 +395,11 @@ fn node_component(props: &NodeProps) -> Html {
                 z-index: 10;
                 display: flex;
                 justify-content: center;
-                align-items: center;",
-                2 * props.radius,
-                2 * props.radius,
+                align-items: center;
+                cursor: pointer;
+                transition: transform 0.2s ease-in-out;",
+                2 * dynamic_radius,
+                2 * dynamic_radius,
                 props.pos.x,
                 props.pos.y
             )}
@@ -377,4 +409,29 @@ fn node_component(props: &NodeProps) -> Html {
             </div>
         </div>
     }
+}
+
+// 重要度とリンク数に基づいて動的サイズを計算する関数
+fn calculate_dynamic_radius(base_radius: i32, importance: Option<u8>, inbound_count: usize) -> i32 {
+    let mut size = base_radius;
+    
+    // 重要度に基づくサイズ調整 (1-5スケール)
+    if let Some(imp) = importance {
+        let importance_bonus = match imp {
+            1 => -5,  // 小さく
+            2 => -2,  
+            3 => 0,   // ベースサイズ
+            4 => 5,   // 大きく
+            5 => 10,  // 最大
+            _ => 0,
+        };
+        size += importance_bonus;
+    }
+    
+    // インバウンドリンク数に基づくサイズ調整
+    let popularity_bonus = (inbound_count as f32).sqrt() as i32 * 3;
+    size += popularity_bonus;
+    
+    // 最小・最大サイズの制限
+    size.clamp(15, 60)
 }

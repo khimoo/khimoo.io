@@ -173,6 +173,8 @@ pub struct NodeRegistry {
     pub connection_lines: Vec<ConnectionLine>,
     pub node_categories: HashMap<NodeId, String>,
     pub category_colors: HashMap<String, CategoryColor>,
+    pub node_importance: HashMap<NodeId, u8>,
+    pub node_inbound_counts: HashMap<NodeId, usize>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -227,6 +229,8 @@ impl NodeRegistry {
             connection_lines: Vec::new(),
             node_categories: HashMap::new(),
             category_colors,
+            node_importance: HashMap::new(),
+            node_inbound_counts: HashMap::new(),
         }
     }
 
@@ -355,5 +359,21 @@ impl NodeRegistry {
 
     pub fn iter_edges(&self) -> impl Iterator<Item = &(NodeId, NodeId)> {
         self.edges.iter()
+    }
+
+    pub fn set_node_importance(&mut self, node_id: NodeId, importance: u8) {
+        self.node_importance.insert(node_id, importance);
+    }
+
+    pub fn get_node_importance(&self, node_id: NodeId) -> Option<u8> {
+        self.node_importance.get(&node_id).copied()
+    }
+
+    pub fn set_node_inbound_count(&mut self, node_id: NodeId, count: usize) {
+        self.node_inbound_counts.insert(node_id, count);
+    }
+
+    pub fn get_node_inbound_count(&self, node_id: NodeId) -> usize {
+        self.node_inbound_counts.get(&node_id).copied().unwrap_or(0)
     }
 }
