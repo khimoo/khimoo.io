@@ -1,0 +1,29 @@
+🔍 Link Validation Report
+📅 Generated: 2025-09-17T13:46:54.848752765+00:00
+
+📊 Summary:
+   📚 Total articles: 7
+   🔗 Total links: 12
+   ❌ Broken links: 2
+   ⚠️  Invalid references: 1
+   🏝️  Orphaned articles: 1
+   📄 Articles with errors: 1
+   ⚠️  Articles with warnings: 1
+
+❌ Errors:
+1. 🔗 Broken Link: broken-link-test → 存在しない記事 (この記事はリンク検証機能をテストするためのものです。 ## 意図的なリンク切れ 以下のリンクは意図的に存在しない記事を参照しています： - [[存在しない記事]]へのwikiリンク - [壊れたリンク)
+2. 🔗 Broken Link: broken-link-test → broken-slug (以下のリンクは意図的に存在しない記事を参照しています： - [[存在しない記事]]へのwikiリンク - [壊れたリンク](broken-slug)へのmarkdownリンク これらのリンクは、リンク)
+3. 📋 Invalid Related Article: broken-link-test → non-existent-article (front matter related_articles)
+
+⚠️  Warnings:
+1. 🔗 Missing Backlinks: readme (No inbound or outbound links) | 💡 Consider adding links to/from this article to integrate it better
+
+📈 Article Statistics:
+   📄 broken-link-test: 2 broken links, 1 invalid references (2 out, 0 in)
+   📄 readme: warnings only (0 out, 0 in)
+
+💡 Recommendations:
+   • Fix broken links by updating article references
+   • Remove invalid entries from related_articles in front matter
+   • Consider creating missing articles if they are frequently referenced
+   • Add links to/from orphaned articles to improve connectivity

@@ -51,6 +51,32 @@ pub struct ArticlesData {
     pub home_articles: Vec<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LinkGraphData {
+    pub graph: HashMap<String, GraphNode>,
+    pub generated_at: String,
+    pub total_connections: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GraphNode {
+    pub connections: Vec<GraphConnection>,
+    pub inbound_count: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GraphConnection {
+    pub target: String,
+    pub connection_type: ConnectionType,
+    pub bidirectional: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum ConnectionType {
+    DirectLink,
+    Bidirectional,
+}
+
 fn main() -> Result<()> {
     let args = Args::parse();
     
@@ -103,14 +129,20 @@ impl ArticleProcessor {
         let articles_with_counts = self.calculate_inbound_counts(articles)
             .context("Failed to calculate inbound counts")?;
         
+        // Build link graph
+        let link_graph = self.build_link_graph(&articles_with_counts)
+            .context("Failed to build link graph")?;
+        
         // Write output files
         self.write_articles_data(&articles_with_counts)
             .context("Failed to write articles data")?;
+        self.write_link_graph_data(&link_graph)
+            .context("Failed to write link graph data")?;
         
         println!("✅ Successfully processed {} articles", articles_with_counts.len());
         
         // Display summary
-        self.display_summary(&articles_with_counts);
+        self.display_summary(&articles_with_counts, &link_graph);
         
         Ok(())
     }
@@ -244,6 +276,97 @@ impl ArticleProcessor {
         Ok(articles)
     }
 
+    fn build_link_graph(&self, articles: &[ProcessedArticle]) -> Result<LinkGraphData> {
+        let mut graph = HashMap::new();
+        let article_slugs: std::collections::HashSet<_> = 
+            articles.iter().map(|a| &a.slug).collect();
+        
+        // First pass: create nodes and direct connections
+        for article in articles {
+            let mut connections = Vec::new();
+            
+            // Process outbound links (direct links only)
+            for link in &article.outbound_links {
+                if article_slugs.contains(&link.target_slug) {
+                    connections.push(GraphConnection {
+                        target: link.target_slug.clone(),
+                        connection_type: ConnectionType::DirectLink,
+                        bidirectional: false,
+                    });
+                }
+            }
+            
+            graph.insert(article.slug.clone(), GraphNode {
+                connections,
+                inbound_count: article.inbound_count,
+            });
+        }
+        
+        // Second pass: detect bidirectional links
+        let mut bidirectional_pairs = std::collections::HashSet::new();
+        
+        for (source_slug, source_node) in &graph {
+            for connection in &source_node.connections {
+                let target_slug = &connection.target;
+                
+                // Check if target also links back to source
+                if let Some(target_node) = graph.get(target_slug) {
+                    let has_backlink = target_node.connections
+                        .iter()
+                        .any(|c| c.target == *source_slug);
+                    
+                    if has_backlink {
+                        // Create a canonical pair (smaller slug first) to avoid duplicates
+                        let pair = if source_slug < target_slug {
+                            (source_slug.clone(), target_slug.clone())
+                        } else {
+                            (target_slug.clone(), source_slug.clone())
+                        };
+                        bidirectional_pairs.insert(pair);
+                    }
+                }
+            }
+        }
+        
+        // Third pass: update bidirectional connections
+        for (slug1, slug2) in &bidirectional_pairs {
+            // Update connections in both nodes
+            if let Some(node1) = graph.get_mut(slug1) {
+                for connection in &mut node1.connections {
+                    if connection.target == *slug2 {
+                        connection.connection_type = ConnectionType::Bidirectional;
+                        connection.bidirectional = true;
+                    }
+                }
+            }
+            
+            if let Some(node2) = graph.get_mut(slug2) {
+                for connection in &mut node2.connections {
+                    if connection.target == *slug1 {
+                        connection.connection_type = ConnectionType::Bidirectional;
+                        connection.bidirectional = true;
+                    }
+                }
+            }
+        }
+        
+        let total_connections = graph.values()
+            .map(|node| node.connections.len())
+            .sum();
+        
+        if self.verbose {
+            println!("🕸️  Built link graph with {} nodes and {} connections", 
+                graph.len(), total_connections);
+            println!("   🔗 Bidirectional pairs: {}", bidirectional_pairs.len());
+        }
+        
+        Ok(LinkGraphData {
+            graph,
+            generated_at: Utc::now().to_rfc3339(),
+            total_connections,
+        })
+    }
+
     fn write_articles_data(&self, articles: &[ProcessedArticle]) -> Result<()> {
         let articles_data = ArticlesData {
             articles: articles.to_vec(),
@@ -270,7 +393,22 @@ impl ArticleProcessor {
         Ok(())
     }
 
-    fn display_summary(&self, articles: &[ProcessedArticle]) {
+    fn write_link_graph_data(&self, link_graph: &LinkGraphData) -> Result<()> {
+        let output_path = self.output_dir.join("link-graph.json");
+        let json = serde_json::to_string_pretty(link_graph)
+            .context("Failed to serialize link graph data")?;
+        
+        std::fs::write(&output_path, json)
+            .with_context(|| format!("Failed to write link graph data to {:?}", output_path))?;
+        
+        if self.verbose {
+            println!("🕸️  Written link graph data to: {:?}", output_path);
+        }
+        
+        Ok(())
+    }
+
+    fn display_summary(&self, articles: &[ProcessedArticle], link_graph: &LinkGraphData) {
         println!("\n📊 Processing Summary:");
         println!("   📚 Total articles: {}", articles.len());
         
@@ -282,6 +420,14 @@ impl ArticleProcessor {
         
         let articles_with_inbound: usize = articles.iter().filter(|a| a.inbound_count > 0).count();
         println!("   📥 Articles with inbound links: {}", articles_with_inbound);
+        
+        // Link graph statistics
+        println!("   🕸️  Link graph connections: {}", link_graph.total_connections);
+        let bidirectional_count = link_graph.graph.values()
+            .flat_map(|node| &node.connections)
+            .filter(|conn| conn.bidirectional)
+            .count() / 2; // Divide by 2 since bidirectional links are counted twice
+        println!("   ↔️  Bidirectional connections: {}", bidirectional_count);
         
         // Category breakdown
         let mut categories: HashMap<String, usize> = HashMap::new();

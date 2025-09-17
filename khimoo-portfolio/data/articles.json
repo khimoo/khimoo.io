@@ -36,7 +36,7 @@
         }
       ],
       "inbound_count": 2,
-      "processed_at": "2025-09-17T13:33:05.945790100+00:00"
+      "processed_at": "2025-09-17T13:53:17.992493434+00:00"
     },
     {
       "slug": "readme",
@@ -55,7 +55,7 @@
       "file_path": "articles/README.md",
       "outbound_links": [],
       "inbound_count": 0,
-      "processed_at": "2025-09-17T13:33:05.945972331+00:00"
+      "processed_at": "2025-09-17T13:53:17.992846640+00:00"
     },
     {
       "slug": "rust-async",
@@ -103,7 +103,7 @@
         }
       ],
       "inbound_count": 4,
-      "processed_at": "2025-09-17T13:33:05.948127696+00:00"
+      "processed_at": "2025-09-17T13:53:17.995491945+00:00"
     },
     {
       "slug": "web-development",
@@ -135,7 +135,7 @@
         }
       ],
       "inbound_count": 1,
-      "processed_at": "2025-09-17T13:33:05.948993154+00:00"
+      "processed_at": "2025-09-17T13:53:17.996766197+00:00"
     },
     {
       "slug": "async-patterns",
@@ -173,7 +173,7 @@
         }
       ],
       "inbound_count": 1,
-      "processed_at": "2025-09-17T13:33:05.950463059+00:00"
+      "processed_at": "2025-09-17T13:53:17.998535798+00:00"
     },
     {
       "slug": "broken-link-test",
@@ -213,7 +213,7 @@
         }
       ],
       "inbound_count": 0,
-      "processed_at": "2025-09-17T13:33:05.952328872+00:00"
+      "processed_at": "2025-09-17T13:53:18.000105830+00:00"
     },
     {
       "slug": "hello",
@@ -254,10 +254,10 @@
         }
       ],
       "inbound_count": 2,
-      "processed_at": "2025-09-17T13:33:05.954184968+00:00"
+      "processed_at": "2025-09-17T13:53:18.001829711+00:00"
     }
   ],
-  "generated_at": "2025-09-17T13:33:05.954330432+00:00",
+  "generated_at": "2025-09-17T13:53:18.002129105+00:00",
   "total_count": 7,
   "home_articles": [
     "tokio-basics",
