@@ -4,7 +4,7 @@ home_display: false
 category: "test"
 importance: 1
 related_articles: ["non-existent-article"]
-tags: ["test", "validation"]
+tags: ["test", "validation", "broken-links"]
 created_at: "2024-01-06T00:00:00Z"
 updated_at: "2024-01-06T00:00:00Z"
 ---
@@ -21,5 +21,3 @@ updated_at: "2024-01-06T00:00:00Z"
 - [壊れたリンク](broken-slug)へのmarkdownリンク
 
 これらのリンクは、リンク検証システムによってエラーとして検出されるはずです。
-
-#test #validation #broken-links

@@ -28,5 +28,3 @@ async fn main() {
 ```
 
 この記事は[[rust-async]]と密接に関連しており、非同期プログラミングの実装面を扱います。
-
-#tokio #rust #async

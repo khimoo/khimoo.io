@@ -4,6 +4,34 @@
 
 このタスクリストは、インタラクティブなマインドマップ形式のポートフォリオサイトを段階的に実装するための詳細な計画です。各タスクは独立して実行可能で、テスト駆動開発を重視し、既存の実装を拡張する形で進めます。
 
+## 重要な開発環境の注意事項
+
+**Nix環境でのコマンド実行**
+- このプロジェクトはNix flakeを使用して開発環境を管理しています
+- 全てのRustコマンド（cargo build、cargo test、cargo runなど）はNix環境内で実行する必要があります
+- **重要**: `nix develop`を単独で実行すると、Kiro IDEでは終了判定が正しく行われません
+- **推奨方法**: `nix develop --command [実行したいコマンド]`の形式でワンライナーとして実行してください
+
+**コマンド実行例**:
+```bash
+# テスト実行
+nix develop --command cargo test
+
+# ビルド実行
+nix develop --command cargo build
+
+# 記事処理ツール実行
+nix develop --command cargo run --bin process-articles
+
+# 開発サーバー起動
+nix develop --command trunk serve
+
+# justコマンド使用
+nix develop --command just dev
+```
+
+この方式により、Nix環境の依存関係を正しく利用しながら、Kiro IDEでの開発を円滑に進めることができます。
+
 ## Task List
 
 - [x] 1. 開発環境とプロジェクト構造の整備
@@ -31,31 +59,29 @@
   - 既存のhello.mdを拡張し、相互リンク、タグ、カテゴリを持つ記事セットを構築する
   - _Requirements: 3.1, 3.2, 3.3, 5.3, 5.4_
 
-- [ ] 2. 記事処理システムの実装
+- [x] 2. 記事処理システムの実装
   - Markdownファイルの解析とFront matter処理を行うRust CLIツールを実装する
-  - リンク抽出、タグ抽出、関連性計算の機能を含む
-  - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.6_
+  - yaml-front-matterライブラリを使用したfront matter解析とリンク抽出機能を含む
+  - _Requirements: 5.1, 5.2, 5.3, 5.6_
 
-- [ ] 2.1 Front matterパーサーの実装
-  - serde_yamlを使用してYAML front matterを解析する機能を実装する
+- [x] 2.1 yaml-front-matterライブラリを使用したFront matterパーサーの実装
+  - yaml-front-matterライブラリを使用してYAML front matterを解析する機能を実装する
   - ArticleMetadata構造体を定義し、デフォルト値の処理を含める
+  - front matterのtagsフィールドからタグ情報を取得する機能を実装する
   - テスト用記事データを使用してパーサーの動作を検証する
   - _Requirements: 5.2, 5.6_
 
-- [ ] 2.2 Markdownリンク抽出機能の実装
+- [x] 2.2 Markdownリンク抽出機能の実装
   - 正規表現を使用して[[記事名]]形式と[テキスト](slug)形式のリンクを抽出する
   - リンク周辺のコンテキスト情報も併せて取得する機能を実装する
   - テスト用記事の様々なリンクパターンで抽出機能を検証する
   - _Requirements: 3.1, 3.2, 5.3_
 
-- [ ] 2.3 タグ抽出機能の実装
-  - #tag形式のタグを抽出し、記録する機能を実装する（関連性計算には使用しない）
-  - 記事のメタデータとしてタグ情報を保存する
-  - _Requirements: 5.4_
-
-- [ ] 2.4 記事処理CLIツールの統合
+- [x] 2.3 記事処理CLIツールの統合
   - process-articles binを実装し、全ての記事処理機能を統合する
+  - yaml-front-matterライブラリとリンク抽出機能を統合する
   - 並行処理とエラーハンドリングを含む堅牢な実装を行う
+  - front matterのtagsフィールドのみを使用し、#tag形式の抽出は行わない
   - _Requirements: 5.1, 5.6_
 
 - [ ] 3. リンク検証システムの実装

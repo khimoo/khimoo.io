@@ -16,6 +16,34 @@
 - **開発環境**: Nix（依存関係管理、再現可能なビルド環境）
 - **ローカル開発**: Rust CLIツール + Nix shell（統一的な開発体験）
 
+### 重要な開発環境の注意事項
+
+**Nix環境でのコマンド実行**
+- このプロジェクトはNix flakeを使用して開発環境を管理しています
+- 全てのRustコマンド（cargo build、cargo test、cargo runなど）はNix環境内で実行する必要があります
+- **重要**: `nix develop`を単独で実行すると、Kiro IDEでは終了判定が正しく行われません
+- **推奨方法**: `nix develop --command [実行したいコマンド]`の形式でワンライナーとして実行してください
+
+**コマンド実行例**:
+```bash
+# テスト実行
+nix develop --command cargo test
+
+# ビルド実行
+nix develop --command cargo build
+
+# 記事処理ツール実行
+nix develop --command cargo run --bin process-articles
+
+# 開発サーバー起動
+nix develop --command trunk serve
+
+# justコマンド使用
+nix develop --command just dev
+```
+
+この方式により、Nix環境の依存関係を正しく利用しながら、Kiro IDEでの開発を円滑に進めることができます。
+
 ## Architecture
 
 ### 全体アーキテクチャ

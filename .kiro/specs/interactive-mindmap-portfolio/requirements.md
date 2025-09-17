@@ -4,6 +4,34 @@
 
 インタラクティブなマインドマップ形式のポートフォリオサイトを構築します。ユーザーの写真を中心に配置し、そこから関連する記事やページへのノードが物理演算によって動的に配置されます。Obsidianのようなマインドマップ形式で、記事間の関連性を視覚的に表現し、ユーザーが直感的にコンテンツを探索できるインタラクティブな体験を提供します。
 
+## 重要な開発環境の注意事項
+
+**Nix環境でのコマンド実行**
+- このプロジェクトはNix flakeを使用して開発環境を管理しています
+- 全てのRustコマンド（cargo build、cargo test、cargo runなど）はNix環境内で実行する必要があります
+- **重要**: `nix develop`を単独で実行すると、Kiro IDEでは終了判定が正しく行われません
+- **推奨方法**: `nix develop --command [実行したいコマンド]`の形式でワンライナーとして実行してください
+
+**コマンド実行例**:
+```bash
+# テスト実行
+nix develop --command cargo test
+
+# ビルド実行
+nix develop --command cargo build
+
+# 記事処理ツール実行
+nix develop --command cargo run --bin process-articles
+
+# 開発サーバー起動
+nix develop --command trunk serve
+
+# justコマンド使用
+nix develop --command just dev
+```
+
+この方式により、Nix環境の依存関係を正しく利用しながら、Kiro IDEでの開発を円滑に進めることができます。
+
 ## Requirements
 
 ### Requirement 1
@@ -60,6 +88,7 @@
 3. WHEN 管理者が記事内で`[[記事名]]`形式のリンクを記述する THEN システムは自動的に記事間の関連性を検出する SHALL
 4. WHEN 記事間に双方向リンクが存在する THEN システムは両記事に相互参照を表示する SHALL
 5. WHEN ユーザーが記事ページにアクセスする THEN システムはMarkdownをHTMLに変換し、内部リンクを適切に処理して表示する SHALL
+6. WHEN 管理者がfront matterにtagsフィールドを設定する THEN システムはタグ情報をメタデータとして記録する SHALL
 
 ### Requirement 6
 

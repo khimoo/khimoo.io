@@ -21,5 +21,3 @@ updated_at: "2024-01-01T00:00:00Z"
 - 箇条書き 2: インタラクティブなノード操作
 
 外部リンク: [Yew](https://yew.rs)
-
-#hello #introduction #portfolio 

@@ -3,7 +3,7 @@ title: "Web開発の基礎"
 home_display: true
 category: "web"
 importance: 3
-tags: ["web", "frontend", "backend"]
+tags: ["web", "frontend", "backend", "development"]
 created_at: "2024-01-05T00:00:00Z"
 updated_at: "2024-01-05T00:00:00Z"
 ---
@@ -25,5 +25,3 @@ updated_at: "2024-01-05T00:00:00Z"
 - API設計
 
 このポートフォリオサイト自体も、[[hello]]で紹介したように、Yewフレームワークを使用したWeb開発の実例です。
-
-#web #development #frontend #backend
