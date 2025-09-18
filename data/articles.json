@@ -17,7 +17,7 @@
       "file_path": "articles/README.md",
       "outbound_links": [],
       "inbound_count": 0,
-      "processed_at": "2025-09-18T12:53:54.923600817+00:00"
+      "processed_at": "2025-09-18T13:11:45.204443866+00:00"
     },
     {
       "slug": "hello",
@@ -58,7 +58,7 @@
         }
       ],
       "inbound_count": 2,
-      "processed_at": "2025-09-18T12:53:54.924802574+00:00"
+      "processed_at": "2025-09-18T13:11:45.205582608+00:00"
     },
     {
       "slug": "async-patterns",
@@ -96,7 +96,7 @@
         }
       ],
       "inbound_count": 1,
-      "processed_at": "2025-09-18T12:53:54.925655840+00:00"
+      "processed_at": "2025-09-18T13:11:45.206420769+00:00"
     },
     {
       "slug": "rust-async",
@@ -144,7 +144,7 @@
         }
       ],
       "inbound_count": 4,
-      "processed_at": "2025-09-18T12:53:54.926475442+00:00"
+      "processed_at": "2025-09-18T13:11:45.207259833+00:00"
     },
     {
       "slug": "test",
@@ -163,7 +163,7 @@
       "file_path": "articles/test.md",
       "outbound_links": [],
       "inbound_count": 0,
-      "processed_at": "2025-09-18T12:53:54.926567073+00:00"
+      "processed_at": "2025-09-18T13:11:45.207327529+00:00"
     },
     {
       "slug": "broken-link-test",
@@ -203,7 +203,7 @@
         }
       ],
       "inbound_count": 0,
-      "processed_at": "2025-09-18T12:53:54.927119606+00:00"
+      "processed_at": "2025-09-18T13:11:45.207919912+00:00"
     },
     {
       "slug": "web-development",
@@ -235,7 +235,7 @@
         }
       ],
       "inbound_count": 1,
-      "processed_at": "2025-09-18T12:53:54.927584506+00:00"
+      "processed_at": "2025-09-18T13:11:45.208385149+00:00"
     },
     {
       "slug": "tokio-basics",
@@ -273,10 +273,10 @@
         }
       ],
       "inbound_count": 2,
-      "processed_at": "2025-09-18T12:53:54.928345188+00:00"
+      "processed_at": "2025-09-18T13:11:45.209165083+00:00"
     }
   ],
-  "generated_at": "2025-09-18T12:53:54.928477365+00:00",
+  "generated_at": "2025-09-18T13:11:45.209309732+00:00",
   "total_count": 8,
   "home_articles": [
     "hello",
