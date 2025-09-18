@@ -44,12 +44,12 @@
 
 ### Requirement 4
 
-**User Story:** ポートフォリオの管理者として、GitHub ActionsがGitHub Pagesに正常にデプロイできることを期待する。そうすることで、権限エラーやデプロイ失敗を回避し、安定したCI/CDパイプラインを維持できる。
+**User Story:** ポートフォリオの管理者として、GitHub ActionsがGitHub Pagesに正常にデプロイできることを期待する。そうすることで、権限エラーやデプロイ失敗を回避し、既存の動作するデプロイメント方式を活用できる。
 
 #### Acceptance Criteria
 
-1. WHEN GitHub Actionsワークフローが実行される THEN システムは適切な権限設定でGitHub Pagesにアクセスできる SHALL
-2. WHEN デプロイプロセスが開始される THEN システムはgithub-actions[bot]の権限不足エラーを回避する SHALL
-3. WHEN 複数のワークフローが存在する THEN システムは競合を避けて単一のデプロイメント戦略を使用する SHALL
-4. WHEN リポジトリ設定が変更される THEN システムはGitHub Pages設定との整合性を保つ SHALL
+1. WHEN GitHub Pagesデプロイが実行される THEN システムは既存のgh-pages.ymlで動作していたデプロイメント方式を基準とする SHALL
+2. WHEN デプロイプロセスが設計される THEN システムはpeaceiris/actions-gh-pages@v3アクションを使用し、publicディレクトリ構造を維持する SHALL
+3. WHEN ビルド成果物が準備される THEN システムはdist/ディレクトリをpublic/ディレクトリにコピーし、404.htmlを適切に設定する SHALL
+4. WHEN 権限エラーが発生する THEN システムは既存の動作するワークフローの権限設定を参考にして問題を解決する SHALL
 
