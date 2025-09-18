@@ -1,0 +1,33 @@
+# Requirements Document
+
+## Introduction
+
+ポートフォリオサイトの基本的なCI/CDシステムをGitHub Actionsで構築します。記事をGitHubリポジトリにpushした際に、記事間のリンク関係性情報を抽出し、ポートフォリオページを自動的にビルド・デプロイすることを目的とします。
+
+**技術的前提**
+- Nix環境による再現可能なビルド環境を活用し、ローカル開発環境とCI環境の一貫性を確保します
+- flake.nixで定義された依存関係により、環境の違いによる問題を回避します
+
+## Requirements
+
+### Requirement 1
+
+**User Story:** ポートフォリオの管理者として、記事ファイルをGitHubリポジトリにpushした際に自動的に記事処理が実行されることを期待する。そうすることで、記事間のリンク関係性情報が抽出され、最新のデータでポートフォリオが更新される。
+
+#### Acceptance Criteria
+
+1. WHEN mainブランチにpushされる THEN システムは自動的にGitHub Actionsワークフローを開始する SHALL
+2. WHEN ワークフローが実行される THEN システムはflake.nixで定義されたNix環境内でcargo run --bin process-articlesを実行する SHALL
+3. WHEN 記事処理が完了する THEN システムは記事間のリンク関係性を含むarticles.jsonとlink-graph.jsonを生成する SHALL
+
+### Requirement 2
+
+**User Story:** ポートフォリオの管理者として、記事処理後に自動的にWebサイトがビルド・デプロイされることを期待する。そうすることで、変更が即座に本番環境に反映され、手動デプロイの手間を省ける。
+
+#### Acceptance Criteria
+
+1. WHEN 記事処理が完了する THEN システムは自動的にWebAssemblyビルドを開始する SHALL
+2. WHEN WebAssemblyビルドが実行される THEN システムはNix環境内でtrunk buildを実行する SHALL
+3. WHEN ビルドが完了する THEN システムは生成されたdist/ディレクトリをGitHub Pagesにデプロイする SHALL
+4. WHEN デプロイが完了する THEN システムはポートフォリオサイトを新しいURLでアクセス可能にする SHALL
+

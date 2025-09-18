@@ -64,7 +64,6 @@ nix develop --command just dev
 2. WHEN 記事内に`[テキスト](記事slug)`形式のリンクが存在する THEN システムは記事間の接続を認識する SHALL
 3. WHEN 関連記事同士がホーム画面に表示されている THEN システムは両ノード間に視覚的な接続線を表示する SHALL
 4. WHEN ユーザーが記事内のリンクをクリックする THEN システムは対応する記事ノードにフォーカスして遷移する SHALL
-5. WHEN ユーザーが接続線をクリックする THEN システムは関連記事への遷移オプションを提供する SHALL
 
 ### Requirement 4
 

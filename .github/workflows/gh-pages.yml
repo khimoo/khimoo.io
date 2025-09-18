@@ -1,35 +1,52 @@
-name: Deploy
+name: CI/CD Pipeline
 
 on:
   push:
-    tags:
-      - '*'
+    branches: [main]
+    paths: 
+      - 'khimoo-portfolio/**'
+      - 'articles/**'
+      - 'flake.nix'
+      - 'flake.lock'
 
 env:
   CARGO_TERM_COLOR: always
+  NIX_CONFIG: "experimental-features = nix-command flakes"
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - run: rustup target add wasm32-unknown-unknown
+      - name: Install Nix
+        uses: cachix/install-nix-action@v23
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
-      - run: cargo install trunk
-
-      - name: Build with trunk
-        run: trunk build --release --public-url /khimoo.io/
+      - name: Process articles
+        run: |
+          nix develop --command cargo run --bin process-articles --features cli-tools
         working-directory: ./khimoo-portfolio
 
-      - name: Copy dist to public
+      - name: Generate link graph
+        run: |
+          nix develop --command cargo run --bin generate-link-graph --features cli-tools
+        working-directory: ./khimoo-portfolio
+
+      - name: Build WebAssembly application
+        run: |
+          nix develop --command trunk build --release --public-url /khimoo.io/
+        working-directory: ./khimoo-portfolio
+
+      - name: Prepare deployment directory
         run: |
           cp -r ./khimoo-portfolio/dist ./public
           cp ./public/index.html ./public/404.html
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
-        if: startsWith(github.ref, 'refs/tags/')
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./public
