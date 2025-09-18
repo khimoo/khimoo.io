@@ -1,0 +1,12 @@
+{
+  "build_time": "2025-09-18T07:37:18Z",
+  "commit_sha": "4c3f91f77f2c011b51b6f4c0f5aaf5779f4e082a",
+  "commit_message": "update",
+  "workflow_run": "17821533111",
+  "triggered_by": "push",
+  "optimizations": {
+    "rust_flags": "-C opt-level=s -C codegen-units=1 -C panic=abort",
+    "compression": ["gzip", "brotli"],
+    "wasm_opt": false
+  }
+}

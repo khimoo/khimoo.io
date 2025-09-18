@@ -1,10 +1,14 @@
 <!doctype html>
-<html lang="jp">
-    <head><link rel="modulepreload" href="/khimoo.io/khimoo-portfolio-b15e979114648b85.js" crossorigin="anonymous" integrity="sha384-0UXMNYP1TtVAOfqRckn0YTCL+4bgQTPHTfoyMvdWGR2+RrVH/xvSZ2hTj0I9ha+I"><link rel="preload" href="/khimoo.io/khimoo-portfolio-b15e979114648b85_bg.wasm" crossorigin="anonymous" integrity="sha384-/32UCkO11yESevOQpnwMskHL92LfuJeeOw7Bp3dAw0jCYRNw1cQESZAb/vYrshkn" as="fetch" type="application/wasm"></head>
-    <body>
+<html lang="ja">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Khimoo Portfolio</title>
+    
 <script type="module">
-import init, * as bindings from '/khimoo.io/khimoo-portfolio-b15e979114648b85.js';
-const wasm = await init({ module_or_path: '/khimoo.io/khimoo-portfolio-b15e979114648b85_bg.wasm' });
+import init, * as bindings from '/khimoo-portfolio-d56aa1f4533e3849.js';
+const wasm = await init({ module_or_path: '/khimoo-portfolio-d56aa1f4533e3849_bg.wasm' });
 
 
 window.wasmBindings = bindings;
@@ -12,5 +16,11 @@ window.wasmBindings = bindings;
 
 dispatchEvent(new CustomEvent("TrunkApplicationStarted", {detail: {wasm}}));
 
-</script></body>
+</script>
+    
+<link rel="modulepreload" href="/khimoo-portfolio-d56aa1f4533e3849.js" crossorigin="anonymous" integrity="sha384-qrX7ivNNFRTuXY+Iow7uxnqDIaEbdoxfOHUj79xhDNYB1Z8cpm+ax0FNFEUd4gpW"><link rel="preload" href="/khimoo-portfolio-d56aa1f4533e3849_bg.wasm" crossorigin="anonymous" integrity="sha384-xRr/XvCfeFcGVb4z+6W+U85FSRWkaa/MkWzOXTjBRYiHZjpSHifeFOnyr4Zq9MXe" as="fetch" type="application/wasm"></head>
+
+<body>
+</body>
+
 </html>

@@ -1,0 +1,106 @@
+{
+  "validation_date": "2025-09-17T13:46:54.848752765+00:00",
+  "summary": {
+    "total_articles": 7,
+    "total_links": 12,
+    "broken_links": 2,
+    "invalid_references": 1,
+    "orphaned_articles": 1,
+    "circular_references": 0,
+    "articles_with_errors": 1,
+    "articles_with_warnings": 1
+  },
+  "errors": [
+    {
+      "error_type": "BrokenLink",
+      "source_article": "broken-link-test",
+      "target_reference": "存在しない記事",
+      "context": "この記事はリンク検証機能をテストするためのものです。 ## 意図的なリンク切れ 以下のリンクは意図的に存在しない記事を参照しています： - [[存在しない記事]]へのwikiリンク - [壊れたリンク",
+      "line_number": null,
+      "suggestion": null
+    },
+    {
+      "error_type": "BrokenLink",
+      "source_article": "broken-link-test",
+      "target_reference": "broken-slug",
+      "context": "以下のリンクは意図的に存在しない記事を参照しています： - [[存在しない記事]]へのwikiリンク - [壊れたリンク](broken-slug)へのmarkdownリンク これらのリンクは、リンク",
+      "line_number": null,
+      "suggestion": null
+    },
+    {
+      "error_type": "InvalidRelatedArticle",
+      "source_article": "broken-link-test",
+      "target_reference": "non-existent-article",
+      "context": "front matter related_articles",
+      "line_number": null,
+      "suggestion": null
+    }
+  ],
+  "warnings": [
+    {
+      "warning_type": "MissingBacklinks",
+      "source_article": "readme",
+      "target_reference": null,
+      "context": "No inbound or outbound links",
+      "suggestion": "Consider adding links to/from this article to integrate it better"
+    }
+  ],
+  "article_stats": {
+    "broken-link-test": {
+      "outbound_links": 2,
+      "inbound_links": 0,
+      "broken_outbound_links": 2,
+      "invalid_related_articles": 1,
+      "has_errors": true,
+      "has_warnings": false
+    },
+    "tokio-basics": {
+      "outbound_links": 2,
+      "inbound_links": 2,
+      "broken_outbound_links": 0,
+      "invalid_related_articles": 0,
+      "has_errors": false,
+      "has_warnings": false
+    },
+    "web-development": {
+      "outbound_links": 1,
+      "inbound_links": 1,
+      "broken_outbound_links": 0,
+      "invalid_related_articles": 0,
+      "has_errors": false,
+      "has_warnings": false
+    },
+    "async-patterns": {
+      "outbound_links": 2,
+      "inbound_links": 1,
+      "broken_outbound_links": 0,
+      "invalid_related_articles": 0,
+      "has_errors": false,
+      "has_warnings": false
+    },
+    "readme": {
+      "outbound_links": 0,
+      "inbound_links": 0,
+      "broken_outbound_links": 0,
+      "invalid_related_articles": 0,
+      "has_errors": false,
+      "has_warnings": true
+    },
+    "rust-async": {
+      "outbound_links": 3,
+      "inbound_links": 4,
+      "broken_outbound_links": 0,
+      "invalid_related_articles": 0,
+      "has_errors": false,
+      "has_warnings": false
+    },
+    "hello": {
+      "outbound_links": 2,
+      "inbound_links": 2,
+      "broken_outbound_links": 0,
+      "invalid_related_articles": 0,
+      "has_errors": false,
+      "has_warnings": false
+    }
+  }
+}
