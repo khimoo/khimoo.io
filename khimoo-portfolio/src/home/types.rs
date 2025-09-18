@@ -121,21 +121,10 @@ impl NodeContent {
                 </a>
             },
             NodeContent::Author { name, image_url, bio } => html! {
-                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; width: 100%;">
                     <img
                         src={image_url.clone()}
-                        style="width: 80%; height: 80%; border-radius: 50%; object-fit: cover; border: 3px solid #fff;"
-                        alt={format!("Profile picture of {}", name)}
+                        style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;"
                     />
-                    <div style="color: white; font-size: 14px; font-weight: bold; margin-top: 5px; text-align: center;">
-                        {name}
-                    </div>
-                    if let Some(bio_text) = bio {
-                        <div style="color: #ccc; font-size: 10px; text-align: center; margin-top: 2px; max-width: 90%; overflow: hidden; text-overflow: ellipsis;">
-                            {bio_text}
-                        </div>
-                    }
-                </div>
             },
         }
     }
@@ -187,7 +176,7 @@ pub struct CategoryColor {
 impl NodeRegistry {
     pub fn new() -> Self {
         let mut category_colors = HashMap::new();
-        
+
         // Default category colors
         category_colors.insert("programming".to_string(), CategoryColor {
             primary: "#4A90E2".to_string(),   // Blue
