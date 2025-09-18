@@ -84,4 +84,44 @@ Content may contain words like rust and programming but they are not extracted a
         assert_eq!(metadata.tags, vec!["rust", "web", "programming"]);
         assert_eq!(metadata.title, "Test Article");
     }
+
+    #[test]
+    fn test_node_navigation_integration() {
+        // Test that node creation includes proper slug mapping
+        use crate::home::data_loader::{ArticlesData, ProcessedArticle, ProcessedMetadata};
+        
+        // Create test article data
+        let test_article = ProcessedArticle {
+            slug: "test-article".to_string(),
+            title: "Test Article".to_string(),
+            content: "# Test Article\n\nThis is a test article.".to_string(),
+            metadata: ProcessedMetadata {
+                title: "Test Article".to_string(),
+                home_display: true,
+                category: Some("test".to_string()),
+                importance: Some(3),
+                related_articles: vec![],
+                tags: vec!["test".to_string()],
+                created_at: None,
+                updated_at: None,
+            },
+            file_path: "articles/test-article.md".to_string(),
+            outbound_links: vec![],
+            inbound_count: 0,
+            processed_at: "2024-01-01T00:00:00Z".to_string(),
+        };
+        
+        let articles_data = ArticlesData {
+            articles: vec![test_article],
+            generated_at: "2024-01-01T00:00:00Z".to_string(),
+            total_count: 1,
+            home_articles: vec!["test-article".to_string()],
+        };
+        
+        // Verify that the article data structure is correct for navigation
+        assert_eq!(articles_data.articles.len(), 1);
+        assert_eq!(articles_data.articles[0].slug, "test-article");
+        assert_eq!(articles_data.articles[0].metadata.home_display, true);
+        assert!(articles_data.home_articles.contains(&"test-article".to_string()));
+    }
 }

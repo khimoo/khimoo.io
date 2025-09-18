@@ -7,11 +7,26 @@ use std::rc::Rc;
 use wasm_bindgen::JsCast;
 use yew::prelude::*;
 use yew_hooks::{use_effect_update_with_deps, use_interval, use_window_scroll, UseMeasureState};
+use yew_router::prelude::*;
+
+// Import the Route enum from main.rs
+#[derive(Clone, Routable, PartialEq)]
+enum Route {
+    #[at("/")]
+    Home,
+    #[at("/admin")]
+    Admin,
+    #[at("/article")]
+    ArticleIndex,
+    #[at("/article/:slug")]
+    ArticleShow { slug: String },
+}
 
 // ArticlesDataからNodeRegistryを生成する関数
-fn create_node_registry_from_articles(articles_data: &ArticlesData, container_bound: &ContainerBound) -> NodeRegistry {
+fn create_node_registry_from_articles(articles_data: &ArticlesData, container_bound: &ContainerBound) -> (NodeRegistry, HashMap<NodeId, String>) {
     let mut reg = NodeRegistry::new();
     let mut slug_to_id = HashMap::new();
+    let mut id_to_slug = HashMap::new();
     let mut next_id = 1u32;
     
     // コンテナの中心を計算
@@ -32,6 +47,7 @@ fn create_node_registry_from_articles(articles_data: &ArticlesData, container_bo
     reg.set_node_importance(NodeId(0), 5); // 最高重要度
     reg.set_node_inbound_count(NodeId(0), 0);
     slug_to_id.insert("author".to_string(), NodeId(0));
+    id_to_slug.insert(NodeId(0), "author".to_string());
     
     // home_display=trueの記事のみをノードとして追加
     let home_articles: Vec<_> = articles_data.articles.iter()
@@ -48,7 +64,7 @@ fn create_node_registry_from_articles(articles_data: &ArticlesData, container_bo
     // home_articlesが空の場合は作者ノードのみ返す
     if home_articles.is_empty() {
         web_sys::console::warn_1(&"No home articles found!".into());
-        return reg;
+        return (reg, id_to_slug);
     }
     
     // 円形にノードを配置するための計算（コンテナサイズに基づく）
@@ -73,6 +89,7 @@ fn create_node_registry_from_articles(articles_data: &ArticlesData, container_bo
         reg.set_node_inbound_count(node_id, article.inbound_count);
         
         slug_to_id.insert(article.slug.clone(), node_id);
+        id_to_slug.insert(node_id, article.slug.clone());
         next_id += 1;
     }
     
@@ -94,7 +111,7 @@ fn create_node_registry_from_articles(articles_data: &ArticlesData, container_bo
         }
     }
     
-    reg
+    (reg, id_to_slug)
 }
 
 #[derive(Properties, PartialEq)]
@@ -115,6 +132,7 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
         
     // 記事データが読み込まれたらノードレジストリと物理世界を一度だけ初期化
     let node_registry = use_state(|| Rc::new(RefCell::new(NodeRegistry::new())));
+    let node_slug_mapping = use_state(|| HashMap::<NodeId, String>::new());
     let physics_world = use_state(|| {
         let empty_registry = Rc::new(RefCell::new(NodeRegistry::new()));
         // 初期化時はデフォルトのContainerBoundを使用（後で更新される）
@@ -133,9 +151,10 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
         if !*initialized {
             web_sys::console::log_1(&format!("Initializing with container_bound: {:?}", props.container_bound).into());
             
-            let new_registry = create_node_registry_from_articles(data, &props.container_bound);
+            let (new_registry, slug_mapping) = create_node_registry_from_articles(data, &props.container_bound);
             let registry_rc = Rc::new(RefCell::new(new_registry));
             node_registry.set(Rc::clone(&registry_rc));
+            node_slug_mapping.set(slug_mapping);
             
             let new_physics_world = PhysicsWorld::new(
                 registry_rc,
@@ -176,27 +195,73 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
 
     let scroll = use_window_scroll();
 
+    // ドラッグ開始位置を追跡
+    let drag_start_pos = use_state(|| None::<(i32, i32)>);
+    let is_dragging = use_state(|| false);
+
     let on_mouse_move = {
         let dragged_node_id = dragged_node_id.clone();
         let physics_world = physics_world.clone();
         let viewport = viewport.clone();
+        let drag_start_pos = drag_start_pos.clone();
+        let is_dragging = is_dragging.clone();
         Callback::from(move |e: MouseEvent| {
             if let Some(id) = *dragged_node_id {
-                let mut world = physics_world.borrow_mut();
-                let screen_pos = Position {
-                    x: (e.client_x() + scroll.0 as i32) as f32,
-                    y: (e.client_y() + scroll.1 as i32) as f32,
-                };
-                world.set_node_position(id, &screen_pos, &viewport);
+                // ドラッグ距離をチェック
+                if let Some((start_x, start_y)) = *drag_start_pos {
+                    let dx = e.client_x() - start_x;
+                    let dy = e.client_y() - start_y;
+                    let distance = ((dx * dx + dy * dy) as f32).sqrt();
+                    
+                    // 5px以上移動したらドラッグ開始
+                    if distance > 5.0 && !*is_dragging {
+                        is_dragging.set(true);
+                        physics_world.borrow_mut().set_node_kinematic(id);
+                    }
+                    
+                    // ドラッグ中の場合のみノード位置を更新
+                    if *is_dragging {
+                        let mut world = physics_world.borrow_mut();
+                        let screen_pos = Position {
+                            x: (e.client_x() + scroll.0 as i32) as f32,
+                            y: (e.client_y() + scroll.1 as i32) as f32,
+                        };
+                        world.set_node_position(id, &screen_pos, &viewport);
+                    }
+                }
             }
         })
     };
 
+    // ノードクリック時のナビゲーション処理
+    let navigator = use_navigator().unwrap();
+    let on_node_click = {
+        let navigator = navigator.clone();
+        let node_slug_mapping = node_slug_mapping.clone();
+        Callback::from(move |node_id: NodeId| {
+            if let Some(slug) = node_slug_mapping.get(&node_id) {
+                // 作者ノードの場合はホームに留まる
+                if slug == "author" {
+                    web_sys::console::log_1(&"Author node clicked - staying on home page".into());
+                    return;
+                }
+                
+                // 記事ページに遷移
+                web_sys::console::log_1(&format!("Navigating to article: {}", slug).into());
+                let route = Route::ArticleShow { slug: slug.clone() };
+                navigator.push(&route);
+            }
+        })
+    };
+    
     let on_mouse_down = {
         let dragged_node_id = dragged_node_id.clone();
-        let physics_world = physics_world.clone();
-        Callback::from(move |id: NodeId| {
-            physics_world.borrow_mut().set_node_kinematic(id);
+        let drag_start_pos = drag_start_pos.clone();
+        let is_dragging = is_dragging.clone();
+        Callback::from(move |(id, e): (NodeId, MouseEvent)| {
+            // ドラッグ開始位置を記録
+            drag_start_pos.set(Some((e.client_x(), e.client_y())));
+            is_dragging.set(false);
             dragged_node_id.set(Some(id));
         })
     };
@@ -204,11 +269,24 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
     let on_mouse_up = {
         let dragged_node_id = dragged_node_id.clone();
         let physics_world = physics_world.clone();
+        let drag_start_pos = drag_start_pos.clone();
+        let is_dragging = is_dragging.clone();
+        let on_node_click = on_node_click.clone();
         Callback::from(move |_: MouseEvent| {
             if let Some(id) = *dragged_node_id {
-                physics_world.borrow_mut().set_node_dynamic(id);
+                // ドラッグしていた場合は物理状態をリセット
+                if *is_dragging {
+                    physics_world.borrow_mut().set_node_dynamic(id);
+                } else {
+                    // ドラッグしていない場合はクリックイベントを発火
+                    on_node_click.emit(id);
+                }
             }
+            
+            // 状態をリセット
             dragged_node_id.set(None);
+            drag_start_pos.set(None);
+            is_dragging.set(false);
         })
     };
 
@@ -428,9 +506,10 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
                             let id = *id;
                             Callback::from(move |e: MouseEvent| {
                                 e.stop_propagation();
-                                on_mouse_down.emit(id);
+                                on_mouse_down.emit((id, e));
                             })
                         };
+                        
                         html!{
                             <NodeComponent
                                 key={id.0}
@@ -485,14 +564,15 @@ fn node_component(props: &NodeProps) -> Html {
                 justify-content: center;
                 align-items: center;
                 cursor: pointer;
-                transition: transform 0.2s ease-in-out;",
+                transition: transform 0.2s ease-in-out;
+                user-select: none;",
                 2 * dynamic_radius,
                 2 * dynamic_radius,
                 props.pos.x,
                 props.pos.y
             )}
         >
-            <div style="max-width: 80%; max-height: 80%; overflow: hidden;">
+            <div style="max-width: 80%; max-height: 80%; overflow: hidden; pointer-events: none;">
                 {props.content.render_content()}
             </div>
         </div>
