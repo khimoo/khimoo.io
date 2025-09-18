@@ -20,6 +20,7 @@ pub struct ArticleMetadata {
     pub tags: Vec<String>,
     pub created_at: Option<String>,
     pub updated_at: Option<String>,
+    pub author_image: Option<String>,
 }
 
 impl Default for ArticleMetadata {
@@ -33,6 +34,7 @@ impl Default for ArticleMetadata {
             tags: Vec::new(),
             created_at: None,
             updated_at: None,
+            author_image: None,
         }
     }
 }
@@ -903,6 +905,7 @@ This article has tags in front matter only.
             tags: vec!["tag1".to_string()],
             created_at: Some("2024-01-01T00:00:00Z".to_string()),
             updated_at: Some("2024-01-02T00:00:00Z".to_string()),
+            author_image: None,
         };
 
         assert!(FrontMatterParser::validate_metadata(&metadata).is_ok());

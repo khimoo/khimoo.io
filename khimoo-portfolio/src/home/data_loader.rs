@@ -94,6 +94,7 @@ pub struct ProcessedMetadata {
     pub tags: Vec<String>,
     pub created_at: Option<String>,
     pub updated_at: Option<String>,
+    pub author_image: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

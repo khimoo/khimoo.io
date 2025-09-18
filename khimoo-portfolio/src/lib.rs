@@ -104,6 +104,7 @@ Content may contain words like rust and programming but they are not extracted a
                 tags: vec!["test".to_string()],
                 created_at: None,
                 updated_at: None,
+                author_image: None,
             },
             file_path: "articles/test-article.md".to_string(),
             outbound_links: vec![],

@@ -1,6 +1,6 @@
 use super::physics_sim::{PhysicsWorld, Viewport};
 use super::types::*;
-use super::data_loader::{use_articles_data, ArticlesData};
+use super::data_loader::{use_articles_data, ArticlesData, ProcessedArticle};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -22,6 +22,62 @@ enum Route {
     ArticleShow { slug: String },
 }
 
+// 作者ノード検索機能：author_imageフィールドを持つ記事を検索
+fn find_author_article(articles_data: &ArticlesData) -> Option<&ProcessedArticle> {
+    // author_imageフィールドを持つ記事をすべて収集
+    let author_articles: Vec<&ProcessedArticle> = articles_data.articles
+        .iter()
+        .filter(|article| article.metadata.author_image.is_some())
+        .collect();
+    
+    // ログ出力（WebAssembly環境でのみ実行）
+    #[cfg(target_arch = "wasm32")]
+    {
+        web_sys::console::log_1(&format!("Found {} articles with author_image field", author_articles.len()).into());
+    }
+    
+    match author_articles.len() {
+        0 => {
+            #[cfg(target_arch = "wasm32")]
+            web_sys::console::log_1(&"No author_image found in any articles".into());
+            None
+        }
+        1 => {
+            let author_article = author_articles[0];
+            #[cfg(target_arch = "wasm32")]
+            web_sys::console::log_1(&format!(
+                "Found author article: '{}' with image: '{}'", 
+                author_article.title,
+                author_article.metadata.author_image.as_ref().unwrap()
+            ).into());
+            Some(author_article)
+        }
+        _ => {
+            // 複数の作者記事が存在する場合は警告を出力し、最初のものを使用
+            #[cfg(target_arch = "wasm32")]
+            {
+                web_sys::console::warn_1(&format!(
+                    "Multiple articles with author_image found ({}). Using the first one: '{}'",
+                    author_articles.len(),
+                    author_articles[0].title
+                ).into());
+                
+                // すべての作者記事をログに出力
+                for (index, article) in author_articles.iter().enumerate() {
+                    web_sys::console::log_1(&format!(
+                        "  {}: '{}' ({})", 
+                        index + 1,
+                        article.title,
+                        article.metadata.author_image.as_ref().unwrap()
+                    ).into());
+                }
+            }
+            
+            Some(author_articles[0])
+        }
+    }
+}
+
 // ArticlesDataからNodeRegistryを生成する関数
 fn create_node_registry_from_articles(articles_data: &ArticlesData, container_bound: &ContainerBound) -> (NodeRegistry, HashMap<NodeId, String>) {
     let mut reg = NodeRegistry::new();
@@ -34,20 +90,55 @@ fn create_node_registry_from_articles(articles_data: &ArticlesData, container_bo
     let center_y = container_bound.height / 2.0;
     
     // デバッグ情報
-    web_sys::console::log_1(&format!("Container bound in create_node_registry: {:?}", container_bound).into());
-    web_sys::console::log_1(&format!("Calculated center: ({}, {})", center_x, center_y).into());
+    #[cfg(target_arch = "wasm32")]
+    {
+        web_sys::console::log_1(&format!("Container bound in create_node_registry: {:?}", container_bound).into());
+        web_sys::console::log_1(&format!("Calculated center: ({}, {})", center_x, center_y).into());
+    }
     
-    // 作者ノードを追加（ID 0は作者用に予約）
-    reg.add_node(
-        NodeId(0),
-        Position { x: center_x, y: center_y }, // コンテナ中央に配置
-        40,
-        NodeContent::Text("Author".to_string()),
-    );
+    // 作者ノードの検索と作成
+    if let Some(author_article) = find_author_article(articles_data) {
+        // メタデータベースの作者ノード作成
+        #[cfg(target_arch = "wasm32")]
+        web_sys::console::log_1(&format!(
+            "Creating metadata-based author node: '{}' with image: '{}'", 
+            author_article.title,
+            author_article.metadata.author_image.as_ref().unwrap()
+        ).into());
+        
+        let author_content = NodeContent::Author {
+            name: author_article.title.clone(),
+            image_url: author_article.metadata.author_image.clone().unwrap(),
+            bio: None, // 将来的に author_bio フィールドを追加可能
+        };
+        
+        reg.add_node(
+            NodeId(0),
+            Position { x: center_x, y: center_y },
+            60, // 作者ノードは大きめ
+            author_content,
+        );
+        
+        slug_to_id.insert(author_article.slug.clone(), NodeId(0));
+        id_to_slug.insert(NodeId(0), author_article.slug.clone());
+    } else {
+        // フォールバック：従来のハードコーディング方式
+        #[cfg(target_arch = "wasm32")]
+        web_sys::console::warn_1(&"No author_image found, using fallback author node".into());
+        
+        reg.add_node(
+            NodeId(0),
+            Position { x: center_x, y: center_y },
+            40,
+            NodeContent::Text("Author".to_string()),
+        );
+        
+        slug_to_id.insert("author".to_string(), NodeId(0));
+        id_to_slug.insert(NodeId(0), "author".to_string());
+    }
+    
     reg.set_node_importance(NodeId(0), 5); // 最高重要度
     reg.set_node_inbound_count(NodeId(0), 0);
-    slug_to_id.insert("author".to_string(), NodeId(0));
-    id_to_slug.insert(NodeId(0), "author".to_string());
     
     // home_display=trueの記事のみをノードとして追加
     let home_articles: Vec<_> = articles_data.articles.iter()
@@ -55,14 +146,18 @@ fn create_node_registry_from_articles(articles_data: &ArticlesData, container_bo
         .collect();
     
     // デバッグ情報をコンソールに出力
-    web_sys::console::log_1(&format!("Total articles: {}", articles_data.articles.len()).into());
-    web_sys::console::log_1(&format!("Home articles count: {}", home_articles.len()).into());
-    for article in &home_articles {
-        web_sys::console::log_1(&format!("Home article: {} ({})", article.title, article.slug).into());
+    #[cfg(target_arch = "wasm32")]
+    {
+        web_sys::console::log_1(&format!("Total articles: {}", articles_data.articles.len()).into());
+        web_sys::console::log_1(&format!("Home articles count: {}", home_articles.len()).into());
+        for article in &home_articles {
+            web_sys::console::log_1(&format!("Home article: {} ({})", article.title, article.slug).into());
+        }
     }
     
     // home_articlesが空の場合は作者ノードのみ返す
     if home_articles.is_empty() {
+        #[cfg(target_arch = "wasm32")]
         web_sys::console::warn_1(&"No home articles found!".into());
         return (reg, id_to_slug);
     }
@@ -602,4 +697,185 @@ fn calculate_dynamic_radius(base_radius: i32, importance: Option<u8>, inbound_co
     
     // 最小・最大サイズの制限
     size.clamp(15, 60)
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::home::data_loader::ProcessedMetadata;
+
+    // Helper function to create a test article
+    fn create_test_article(slug: &str, title: &str, author_image: Option<String>) -> ProcessedArticle {
+        ProcessedArticle {
+            slug: slug.to_string(),
+            title: title.to_string(),
+            content: "Test content".to_string(),
+            metadata: ProcessedMetadata {
+                title: title.to_string(),
+                home_display: true,
+                category: None,
+                importance: Some(3),
+                related_articles: vec![],
+                tags: vec![],
+                created_at: None,
+                updated_at: None,
+                author_image,
+            },
+            file_path: format!("{}.md", slug),
+            outbound_links: vec![],
+            inbound_count: 0,
+            processed_at: "2024-01-01T00:00:00Z".to_string(),
+        }
+    }
+
+    #[test]
+    fn test_find_author_article_none_found() {
+        let articles_data = ArticlesData {
+            articles: vec![
+                create_test_article("article1", "Article 1", None),
+                create_test_article("article2", "Article 2", None),
+            ],
+            generated_at: "2024-01-01T00:00:00Z".to_string(),
+            total_count: 2,
+            home_articles: vec!["article1".to_string(), "article2".to_string()],
+        };
+
+        let result = find_author_article(&articles_data);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_find_author_article_single_found() {
+        let articles_data = ArticlesData {
+            articles: vec![
+                create_test_article("article1", "Article 1", None),
+                create_test_article("author", "About Me", Some("/images/profile.jpg".to_string())),
+                create_test_article("article2", "Article 2", None),
+            ],
+            generated_at: "2024-01-01T00:00:00Z".to_string(),
+            total_count: 3,
+            home_articles: vec!["article1".to_string(), "author".to_string(), "article2".to_string()],
+        };
+
+        let result = find_author_article(&articles_data);
+        assert!(result.is_some());
+        let author_article = result.unwrap();
+        assert_eq!(author_article.slug, "author");
+        assert_eq!(author_article.title, "About Me");
+        assert_eq!(author_article.metadata.author_image, Some("/images/profile.jpg".to_string()));
+    }
+
+    #[test]
+    fn test_find_author_article_multiple_found() {
+        let articles_data = ArticlesData {
+            articles: vec![
+                create_test_article("author1", "About Me 1", Some("/images/profile1.jpg".to_string())),
+                create_test_article("article1", "Article 1", None),
+                create_test_article("author2", "About Me 2", Some("/images/profile2.jpg".to_string())),
+            ],
+            generated_at: "2024-01-01T00:00:00Z".to_string(),
+            total_count: 3,
+            home_articles: vec!["author1".to_string(), "article1".to_string(), "author2".to_string()],
+        };
+
+        let result = find_author_article(&articles_data);
+        assert!(result.is_some());
+        let author_article = result.unwrap();
+        // Should return the first one found
+        assert_eq!(author_article.slug, "author1");
+        assert_eq!(author_article.title, "About Me 1");
+        assert_eq!(author_article.metadata.author_image, Some("/images/profile1.jpg".to_string()));
+    }
+
+    #[test]
+    fn test_find_author_article_empty_articles() {
+        let articles_data = ArticlesData {
+            articles: vec![],
+            generated_at: "2024-01-01T00:00:00Z".to_string(),
+            total_count: 0,
+            home_articles: vec![],
+        };
+
+        let result = find_author_article(&articles_data);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_create_node_registry_with_author_metadata() {
+        let articles_data = ArticlesData {
+            articles: vec![
+                create_test_article("author", "About Khimoo", Some("/images/profile.jpg".to_string())),
+                create_test_article("article1", "Article 1", None),
+            ],
+            generated_at: "2024-01-01T00:00:00Z".to_string(),
+            total_count: 2,
+            home_articles: vec!["author".to_string(), "article1".to_string()],
+        };
+
+        let container_bound = ContainerBound {
+            width: 800.0,
+            height: 600.0,
+            ..Default::default()
+        };
+
+        let (registry, id_to_slug) = create_node_registry_from_articles(&articles_data, &container_bound);
+
+        // Check that author node (ID 0) exists
+        assert!(registry.positions.contains_key(&NodeId(0)));
+        assert!(registry.contents.contains_key(&NodeId(0)));
+        
+        // Check that author node has correct content
+        if let Some(NodeContent::Author { name, image_url, bio }) = registry.contents.get(&NodeId(0)) {
+            assert_eq!(name, "About Khimoo");
+            assert_eq!(image_url, "/images/profile.jpg");
+            assert_eq!(bio, &None);
+        } else {
+            panic!("Author node should have NodeContent::Author content");
+        }
+
+        // Check that author node is mapped to correct slug
+        assert_eq!(id_to_slug.get(&NodeId(0)), Some(&"author".to_string()));
+        
+        // Check that author node has correct importance and inbound count
+        assert_eq!(registry.get_node_importance(NodeId(0)), Some(5));
+        assert_eq!(registry.get_node_inbound_count(NodeId(0)), 0);
+    }
+
+    #[test]
+    fn test_create_node_registry_fallback_without_author_metadata() {
+        let articles_data = ArticlesData {
+            articles: vec![
+                create_test_article("article1", "Article 1", None),
+                create_test_article("article2", "Article 2", None),
+            ],
+            generated_at: "2024-01-01T00:00:00Z".to_string(),
+            total_count: 2,
+            home_articles: vec!["article1".to_string(), "article2".to_string()],
+        };
+
+        let container_bound = ContainerBound {
+            width: 800.0,
+            height: 600.0,
+            ..Default::default()
+        };
+
+        let (registry, id_to_slug) = create_node_registry_from_articles(&articles_data, &container_bound);
+
+        // Check that author node (ID 0) exists
+        assert!(registry.positions.contains_key(&NodeId(0)));
+        assert!(registry.contents.contains_key(&NodeId(0)));
+        
+        // Check that author node has fallback text content
+        if let Some(NodeContent::Text(text)) = registry.contents.get(&NodeId(0)) {
+            assert_eq!(text, "Author");
+        } else {
+            panic!("Fallback author node should have NodeContent::Text content");
+        }
+
+        // Check that author node is mapped to "author" slug
+        assert_eq!(id_to_slug.get(&NodeId(0)), Some(&"author".to_string()));
+        
+        // Check that author node has correct importance and inbound count
+        assert_eq!(registry.get_node_importance(NodeId(0)), Some(5));
+        assert_eq!(registry.get_node_inbound_count(NodeId(0)), 0);
+    }
 }

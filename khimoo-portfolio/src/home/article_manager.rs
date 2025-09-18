@@ -642,6 +642,7 @@ mod tests {
                 tags: vec!["test".to_string()],
                 created_at: None,
                 updated_at: None,
+                author_image: None,
             },
             file_path: format!("articles/{}.md", slug),
             outbound_links: Vec::new(),
