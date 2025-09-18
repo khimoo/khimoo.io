@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Data Loader Test</title>
+</head>
+<body>
+    <h1>Data Loader URL Detection Test</h1>
+    <div id="results"></div>
+    
+    <script>
+        // Simulate the DataLoader URL detection logic
+        function detectBaseUrl() {
+            const pathname = window.location.pathname;
+            const hostname = window.location.hostname;
+            
+            console.log('Current pathname:', pathname);
+            console.log('Current hostname:', hostname);
+            
+            if (pathname.startsWith('/khimoo.io/') || pathname.includes('/khimoo.io')) {
+                console.log('Detected GitHub Pages subdirectory, using /khimoo.io/data');
+                return '/khimoo.io/data';
+            }
+            
+            if (hostname.includes('github.io')) {
+                console.log('Detected GitHub Pages, using /khimoo.io/data');
+                return '/khimoo.io/data';
+            }
+            
+            console.log('Using default base URL: /data');
+            return '/data';
+        }
+        
+        const baseUrl = detectBaseUrl();
+        const articlesUrl = baseUrl + '/articles.json';
+        
+        document.getElementById('results').innerHTML = `
+            <p><strong>Detected Base URL:</strong> ${baseUrl}</p>
+            <p><strong>Articles URL:</strong> ${articlesUrl}</p>
+            <p><strong>Current Location:</strong> ${window.location.href}</p>
+            <p><strong>Pathname:</strong> ${window.location.pathname}</p>
+            <p><strong>Hostname:</strong> ${window.location.hostname}</p>
+        `;
+        
+        // Test if the articles.json file is accessible
+        fetch(articlesUrl)
+            .then(response => {
+                if (response.ok) {
+                    document.getElementById('results').innerHTML += `
+                        <p style="color: green;"><strong>✅ Articles JSON is accessible!</strong></p>
+                    `;
+                    return response.json();
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+            })
+            .then(data => {
+                document.getElementById('results').innerHTML += `
+                    <p><strong>Articles loaded:</strong> ${data.articles.length}</p>
+                    <p><strong>Home articles:</strong> ${data.articles.filter(a => a.metadata.home_display).length}</p>
+                `;
+            })
+            .catch(error => {
+                document.getElementById('results').innerHTML += `
+                    <p style="color: red;"><strong>❌ Failed to load articles:</strong> ${error.message}</p>
+                `;
+            });
+    </script>
+</body>
+</html>

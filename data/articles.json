@@ -17,7 +17,7 @@
       "file_path": "articles/README.md",
       "outbound_links": [],
       "inbound_count": 0,
-      "processed_at": "2025-09-18T12:24:16.918185503+00:00"
+      "processed_at": "2025-09-18T12:53:54.923600817+00:00"
     },
     {
       "slug": "hello",
@@ -58,7 +58,7 @@
         }
       ],
       "inbound_count": 2,
-      "processed_at": "2025-09-18T12:24:16.919386192+00:00"
+      "processed_at": "2025-09-18T12:53:54.924802574+00:00"
     },
     {
       "slug": "async-patterns",
@@ -96,7 +96,7 @@
         }
       ],
       "inbound_count": 1,
-      "processed_at": "2025-09-18T12:24:16.920378844+00:00"
+      "processed_at": "2025-09-18T12:53:54.925655840+00:00"
     },
     {
       "slug": "rust-async",
@@ -144,12 +144,12 @@
         }
       ],
       "inbound_count": 4,
-      "processed_at": "2025-09-18T12:24:16.921377095+00:00"
+      "processed_at": "2025-09-18T12:53:54.926475442+00:00"
     },
     {
       "slug": "test",
       "title": "Untitled",
-      "content": "test\ntest\ntest\ntest\ntest\ntest\ntest\ntest\ntest\ntest\n",
+      "content": "test\ntest\ntest\ntest\ntest\ntest\ntest\ntest\ntest\ntest\ntest\n",
       "metadata": {
         "title": "Untitled",
         "home_display": false,
@@ -163,7 +163,7 @@
       "file_path": "articles/test.md",
       "outbound_links": [],
       "inbound_count": 0,
-      "processed_at": "2025-09-18T12:24:16.921446976+00:00"
+      "processed_at": "2025-09-18T12:53:54.926567073+00:00"
     },
     {
       "slug": "broken-link-test",
@@ -203,7 +203,7 @@
         }
       ],
       "inbound_count": 0,
-      "processed_at": "2025-09-18T12:24:16.922229556+00:00"
+      "processed_at": "2025-09-18T12:53:54.927119606+00:00"
     },
     {
       "slug": "web-development",
@@ -235,7 +235,7 @@
         }
       ],
       "inbound_count": 1,
-      "processed_at": "2025-09-18T12:24:16.922817893+00:00"
+      "processed_at": "2025-09-18T12:53:54.927584506+00:00"
     },
     {
       "slug": "tokio-basics",
@@ -273,10 +273,10 @@
         }
       ],
       "inbound_count": 2,
-      "processed_at": "2025-09-18T12:24:16.923720035+00:00"
+      "processed_at": "2025-09-18T12:53:54.928345188+00:00"
     }
   ],
-  "generated_at": "2025-09-18T12:24:16.923870536+00:00",
+  "generated_at": "2025-09-18T12:53:54.928477365+00:00",
   "total_count": 8,
   "home_articles": [
     "hello",
