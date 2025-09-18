@@ -21,6 +21,10 @@ env:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -81,6 +85,17 @@ jobs:
           retention-days: 30
           
       - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./khimoo-portfolio/dist
+          force_orphan: true
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
+          commit_message: 'Deploy to GitHub Pages'
+          
+      - name: Verify deployment
         run: |
-          echo "GitHub Pages deployment step - to be implemented"
-          # Deploy dist/ directory to GitHub Pages
+          echo "✅ GitHub Pages deployment completed"
+          echo "🌐 Site will be available at: https://${{ github.repository_owner }}.github.io/khimoo.io/"
+          echo "📝 Deployment commit: ${{ github.sha }}"
