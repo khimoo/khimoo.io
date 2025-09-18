@@ -92,8 +92,27 @@ jobs:
           
       - name: Generate link graph
         run: |
-          echo "Link graph generation step - to be implemented"
-          # nix develop --command cargo run --bin generate-link-graph
+          echo "🕸️  Generating link graph from processed articles..."
+          cd khimoo-portfolio
+          nix develop --command cargo run --features cli-tools --bin generate-link-graph -- --articles-dir articles --output-dir data --verbose
+          echo "✅ Link graph generation completed"
+          
+      - name: Verify link graph generation
+        run: |
+          echo "🔍 Verifying link graph generation results..."
+          if [ -f "khimoo-portfolio/data/link-graph.json" ]; then
+            echo "✅ link-graph.json generated successfully"
+            echo "📊 Link graph file size:"
+            ls -lh khimoo-portfolio/data/link-graph.json
+            echo "📄 Link graph data preview (first 20 lines):"
+            head -20 khimoo-portfolio/data/link-graph.json
+            echo "📈 Link graph summary:"
+            echo "   📁 Updated data files:"
+            ls -la khimoo-portfolio/data/
+          else
+            echo "❌ link-graph.json not found!"
+            exit 1
+          fi
           
       - name: Build WebAssembly application
         run: |
