@@ -1,20 +1,15 @@
 {
   "graph": {
-    "about-khimoo": {
-      "connections": [],
-      "inbound_count": 0,
-      "outbound_count": 0
-    },
     "hello": {
       "connections": [
         {
-          "target": "web-development",
+          "target": "rust-async",
           "connection_type": "Bidirectional",
           "bidirectional": true,
           "link_count": 1
         },
         {
-          "target": "rust-async",
+          "target": "web-development",
           "connection_type": "Bidirectional",
           "bidirectional": true,
           "link_count": 1
@@ -23,12 +18,7 @@
       "inbound_count": 2,
       "outbound_count": 2
     },
-    "broken-link-test": {
-      "connections": [],
-      "inbound_count": 0,
-      "outbound_count": 2
-    },
-    "readme": {
+    "about-khimoo": {
       "connections": [],
       "inbound_count": 0,
       "outbound_count": 0
@@ -45,6 +35,16 @@
       "inbound_count": 2,
       "outbound_count": 2
     },
+    "test": {
+      "connections": [],
+      "inbound_count": 0,
+      "outbound_count": 0
+    },
+    "broken-link-test": {
+      "connections": [],
+      "inbound_count": 0,
+      "outbound_count": 2
+    },
     "web-development": {
       "connections": [
         {
@@ -56,11 +56,6 @@
       ],
       "inbound_count": 1,
       "outbound_count": 1
-    },
-    "test": {
-      "connections": [],
-      "inbound_count": 0,
-      "outbound_count": 0
     },
     "async-patterns": {
       "connections": [
@@ -80,6 +75,11 @@
       "inbound_count": 1,
       "outbound_count": 2
     },
+    "readme": {
+      "connections": [],
+      "inbound_count": 0,
+      "outbound_count": 0
+    },
     "rust-async": {
       "connections": [
         {
@@ -89,13 +89,13 @@
           "link_count": 1
         },
         {
-          "target": "async-patterns",
+          "target": "hello",
           "connection_type": "Bidirectional",
           "bidirectional": true,
           "link_count": 1
         },
         {
-          "target": "hello",
+          "target": "async-patterns",
           "connection_type": "Bidirectional",
           "bidirectional": true,
           "link_count": 1
@@ -105,7 +105,7 @@
       "outbound_count": 3
     }
   },
-  "generated_at": "2025-09-18T15:55:01.658450028+00:00",
+  "generated_at": "2025-09-18T17:00:37.681095468+00:00",
   "total_connections": 9,
   "bidirectional_pairs": 4,
   "direct_links": 1
