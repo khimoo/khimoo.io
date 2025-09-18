@@ -12,12 +12,13 @@
         "related_articles": [],
         "tags": [],
         "created_at": null,
-        "updated_at": null
+        "updated_at": null,
+        "author_image": null
       },
       "file_path": "articles/README.md",
       "outbound_links": [],
       "inbound_count": 0,
-      "processed_at": "2025-09-18T13:11:45.204443866+00:00"
+      "processed_at": "2025-09-18T15:54:55.400493272+00:00"
     },
     {
       "slug": "hello",
@@ -38,7 +39,8 @@
           "portfolio"
         ],
         "created_at": "2024-01-01T00:00:00Z",
-        "updated_at": "2024-01-01T00:00:00Z"
+        "updated_at": "2024-01-01T00:00:00Z",
+        "author_image": null
       },
       "file_path": "articles/hello.md",
       "outbound_links": [
@@ -58,7 +60,7 @@
         }
       ],
       "inbound_count": 2,
-      "processed_at": "2025-09-18T13:11:45.205582608+00:00"
+      "processed_at": "2025-09-18T15:54:55.401616731+00:00"
     },
     {
       "slug": "async-patterns",
@@ -76,7 +78,8 @@
           "rust"
         ],
         "created_at": "2024-01-04T00:00:00Z",
-        "updated_at": "2024-01-04T00:00:00Z"
+        "updated_at": "2024-01-04T00:00:00Z",
+        "author_image": null
       },
       "file_path": "articles/async-patterns.md",
       "outbound_links": [
@@ -96,7 +99,7 @@
         }
       ],
       "inbound_count": 1,
-      "processed_at": "2025-09-18T13:11:45.206420769+00:00"
+      "processed_at": "2025-09-18T15:54:55.402425028+00:00"
     },
     {
       "slug": "rust-async",
@@ -117,7 +120,8 @@
           "programming"
         ],
         "created_at": "2024-01-02T00:00:00Z",
-        "updated_at": "2024-01-02T00:00:00Z"
+        "updated_at": "2024-01-02T00:00:00Z",
+        "author_image": null
       },
       "file_path": "articles/rust-async.md",
       "outbound_links": [
@@ -144,7 +148,7 @@
         }
       ],
       "inbound_count": 4,
-      "processed_at": "2025-09-18T13:11:45.207259833+00:00"
+      "processed_at": "2025-09-18T15:54:55.403261919+00:00"
     },
     {
       "slug": "test",
@@ -158,12 +162,13 @@
         "related_articles": [],
         "tags": [],
         "created_at": null,
-        "updated_at": null
+        "updated_at": null,
+        "author_image": null
       },
       "file_path": "articles/test.md",
       "outbound_links": [],
       "inbound_count": 0,
-      "processed_at": "2025-09-18T13:11:45.207327529+00:00"
+      "processed_at": "2025-09-18T15:54:55.403350605+00:00"
     },
     {
       "slug": "broken-link-test",
@@ -183,7 +188,8 @@
           "broken-links"
         ],
         "created_at": "2024-01-06T00:00:00Z",
-        "updated_at": "2024-01-06T00:00:00Z"
+        "updated_at": "2024-01-06T00:00:00Z",
+        "author_image": null
       },
       "file_path": "articles/broken-link-test.md",
       "outbound_links": [
@@ -203,7 +209,31 @@
         }
       ],
       "inbound_count": 0,
-      "processed_at": "2025-09-18T13:11:45.207919912+00:00"
+      "processed_at": "2025-09-18T15:54:55.403920305+00:00"
+    },
+    {
+      "slug": "about-khimoo",
+      "title": "Khimoo",
+      "content": "\n# About Khimoo\n\nSoftware developer passionate about Rust and web technologies.\n\n## Background\n\nI'm a developer who enjoys building interactive web applications and exploring the latest technologies in the Rust ecosystem. This portfolio showcases my work and thoughts on various technical topics.\n\n## Interests\n\n- Rust programming language\n- Web development with Yew\n- Interactive data visualization\n- Physics simulations\n- Modern web technologies\n\n## Contact\n\nFeel free to explore the articles and projects in this interactive mindmap portfolio. Each node represents a different aspect of my work and interests.\n\nThe articles are interconnected, showing relationships between different topics and technologies I work with.",
+      "metadata": {
+        "title": "Khimoo",
+        "home_display": false,
+        "category": "author",
+        "importance": 5,
+        "related_articles": [],
+        "tags": [
+          "about",
+          "profile",
+          "author"
+        ],
+        "created_at": "2024-01-01T00:00:00Z",
+        "updated_at": "2024-01-01T00:00:00Z",
+        "author_image": "https://avatars.githubusercontent.com/u/1?v=4"
+      },
+      "file_path": "articles/about-khimoo.md",
+      "outbound_links": [],
+      "inbound_count": 0,
+      "processed_at": "2025-09-18T15:54:55.404118978+00:00"
     },
     {
       "slug": "web-development",
@@ -222,7 +252,8 @@
           "development"
         ],
         "created_at": "2024-01-05T00:00:00Z",
-        "updated_at": "2024-01-05T00:00:00Z"
+        "updated_at": "2024-01-05T00:00:00Z",
+        "author_image": null
       },
       "file_path": "articles/web-development.md",
       "outbound_links": [
@@ -235,7 +266,7 @@
         }
       ],
       "inbound_count": 1,
-      "processed_at": "2025-09-18T13:11:45.208385149+00:00"
+      "processed_at": "2025-09-18T15:54:55.404590974+00:00"
     },
     {
       "slug": "tokio-basics",
@@ -253,7 +284,8 @@
           "async"
         ],
         "created_at": "2024-01-03T00:00:00Z",
-        "updated_at": "2024-01-03T00:00:00Z"
+        "updated_at": "2024-01-03T00:00:00Z",
+        "author_image": null
       },
       "file_path": "articles/tokio-basics.md",
       "outbound_links": [
@@ -273,11 +305,11 @@
         }
       ],
       "inbound_count": 2,
-      "processed_at": "2025-09-18T13:11:45.209165083+00:00"
+      "processed_at": "2025-09-18T15:54:55.405359316+00:00"
     }
   ],
-  "generated_at": "2025-09-18T13:11:45.209309732+00:00",
-  "total_count": 8,
+  "generated_at": "2025-09-18T15:54:55.405485653+00:00",
+  "total_count": 9,
   "home_articles": [
     "hello",
     "rust-async",
