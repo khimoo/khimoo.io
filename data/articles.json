@@ -1,6 +1,44 @@
 {
   "articles": [
     {
+      "slug": "tokio-basics",
+      "title": "Tokio入門",
+      "content": "\n# Tokio入門\n\nTokioは[[rust-async]]の基礎となる非同期ランタイムです。\n\n## Tokioの特徴\n\n- 高性能な非同期I/O\n- タスクスケジューリング\n- タイマーとタイムアウト\n\n## 基本的な使用方法\n\n```rust\n#[tokio::main]\nasync fn main() {\n    println!(\"Hello, Tokio!\");\n}\n```\n\nこの記事は[[rust-async]]と密接に関連しており、非同期プログラミングの実装面を扱います。",
+      "metadata": {
+        "title": "Tokio入門",
+        "home_display": true,
+        "category": "programming",
+        "importance": 3,
+        "related_articles": [],
+        "tags": [
+          "rust",
+          "tokio",
+          "async"
+        ],
+        "created_at": "2024-01-03T00:00:00Z",
+        "updated_at": "2024-01-03T00:00:00Z"
+      },
+      "file_path": "articles/tokio-basics.md",
+      "outbound_links": [
+        {
+          "target_slug": "rust-async",
+          "link_type": "WikiLink",
+          "context": "# Tokio入門 Tokioは[[rust-async]]の基礎となる非同期ランタイムです。 ## Tokioの特徴 - 高性能な非同期I/O",
+          "position": 24,
+          "original_text": "[[rust-async]]"
+        },
+        {
+          "target_slug": "rust-async",
+          "link_type": "WikiLink",
+          "context": "main() { println!(\"Hello, Tokio!\"); } ``` この記事は[[rust-async]]と密接に関連しており、非同期プログラミングの実装面を扱います。",
+          "position": 333,
+          "original_text": "[[rust-async]]"
+        }
+      ],
+      "inbound_count": 2,
+      "processed_at": "2025-09-17T16:46:45.390753577+00:00"
+    },
+    {
       "slug": "readme",
       "title": "Untitled",
       "content": "# Test Articles Documentation\n\nこのディレクトリには、インタラクティブマインドマップポートフォリオの開発・テスト用記事が含まれています。\n\n## 記事構成\n\n### Phase 1: 基本記事セット（6記事）\n\n1. **hello.md** - 導入記事（home_display: true, importance: 4）\n2. **rust-async.md** - Rust非同期プログラミング（home_display: true, importance: 4）\n3. **tokio-basics.md** - Tokio入門（home_display: true, importance: 3）\n4. **async-patterns.md** - 非同期パターン集（home_display: false, importance: 2）\n5. **web-development.md** - Web開発基礎（home_display: true, importance: 3）\n6. **broken-link-test.md** - リンク切れテスト（home_display: false, importance: 1）\n\n## リンク関係\n\n### 相互リンク\n- rust-async ↔ tokio-basics\n- hello ↔ rust-async\n- hello ↔ web-development\n\n### 一方向リンク\n- async-patterns → rust-async\n- async-patterns → tokio-basics\n\n### 意図的なリンク切れ（テスト用）\n- broken-link-test → 存在しない記事\n\n## カテゴリ分類\n\n- **introduction**: hello\n- **programming**: rust-async, tokio-basics, async-patterns\n- **web**: web-development\n- **test**: broken-link-test\n\n## 重要度レベル\n\n- **4**: hello, rust-async（最重要、大きなノード）\n- **3**: tokio-basics, web-development（重要、中サイズノード）\n- **2**: async-patterns（普通、小サイズノード）\n- **1**: broken-link-test（最小、テスト用）\n\n## ホーム画面表示\n\nhome_display=trueの記事（4記事）がホーム画面のノードとして表示されます：\n- hello\n- rust-async\n- tokio-basics\n- web-development\n\n## タグ\n\n記事内の#タグは抽出・記録されますが、関連性計算には使用されません。\nデバッグ情報として活用されます。",
@@ -17,86 +55,7 @@
       "file_path": "articles/README.md",
       "outbound_links": [],
       "inbound_count": 0,
-      "processed_at": "2025-09-18T08:33:55.892092849+00:00"
-    },
-    {
-      "slug": "hello",
-      "title": "Hello World - はじめに",
-      "content": "\n# Hello World - はじめに\n\nこれはインタラクティブマインドマップポートフォリオのサンプル記事です。\n\nこのポートフォリオでは、記事間の関連性を視覚的に表現し、[[rust-async]]や[Web開発の基礎](web-development)などの技術記事を探索できます。\n\n## 特徴\n\n- 箇条書き 1: 物理演算による動的レイアウト\n- 箇条書き 2: インタラクティブなノード操作\n\n外部リンク: [Yew](https://yew.rs)",
-      "metadata": {
-        "title": "Hello World - はじめに",
-        "home_display": true,
-        "category": "introduction",
-        "importance": 4,
-        "related_articles": [
-          "rust-async",
-          "web-development"
-        ],
-        "tags": [
-          "hello",
-          "introduction",
-          "portfolio"
-        ],
-        "created_at": "2024-01-01T00:00:00Z",
-        "updated_at": "2024-01-01T00:00:00Z"
-      },
-      "file_path": "articles/hello.md",
-      "outbound_links": [
-        {
-          "target_slug": "rust-async",
-          "link_type": "WikiLink",
-          "context": "これはインタラクティブマインドマップポートフォリオのサンプル記事です。 このポートフォリオでは、記事間の関連性を視覚的に表現し、[[rust-async]]や[Web開発の基礎](web-develo",
-          "position": 222,
-          "original_text": "[[rust-async]]"
-        },
-        {
-          "target_slug": "web-development",
-          "link_type": "MarkdownLink",
-          "context": "これはインタラクティブマインドマップポートフォリオのサンプル記事です。 このポートフォリオでは、記事間の関連性を視覚的に表現し、[[rust-async]]や[Web開発の基礎](web-develo",
-          "position": 239,
-          "original_text": "[Web開発の基礎](web-development)"
-        }
-      ],
-      "inbound_count": 2,
-      "processed_at": "2025-09-18T08:33:55.893198897+00:00"
-    },
-    {
-      "slug": "async-patterns",
-      "title": "非同期パターン集",
-      "content": "\n# 非同期パターン集\n\n[[rust-async]]で使える実用的なパターンを紹介します。\n\n## よく使われるパターン\n\n### 1. 並行処理パターン\n複数のタスクを同時に実行する方法。\n\n### 2. エラーハンドリングパターン\n非同期処理でのエラー処理のベストプラクティス。\n\n### 3. リソース管理パターン\n非同期コンテキストでのリソースの適切な管理。\n\nこれらのパターンは[[tokio-basics]]の知識を前提としています。",
-      "metadata": {
-        "title": "非同期パターン集",
-        "home_display": false,
-        "category": "programming",
-        "importance": 2,
-        "related_articles": [],
-        "tags": [
-          "async",
-          "patterns",
-          "rust"
-        ],
-        "created_at": "2024-01-04T00:00:00Z",
-        "updated_at": "2024-01-04T00:00:00Z"
-      },
-      "file_path": "articles/async-patterns.md",
-      "outbound_links": [
-        {
-          "target_slug": "rust-async",
-          "link_type": "WikiLink",
-          "context": "# 非同期パターン集 [[rust-async]]で使える実用的なパターンを紹介します。 ## よく使われるパターン ###",
-          "position": 29,
-          "original_text": "[[rust-async]]"
-        },
-        {
-          "target_slug": "tokio-basics",
-          "link_type": "WikiLink",
-          "context": "### 3. リソース管理パターン 非同期コンテキストでのリソースの適切な管理。 これらのパターンは[[tokio-basics]]の知識を前提としています。",
-          "position": 473,
-          "original_text": "[[tokio-basics]]"
-        }
-      ],
-      "inbound_count": 1,
-      "processed_at": "2025-09-18T08:33:55.893994014+00:00"
+      "processed_at": "2025-09-17T16:46:45.391775609+00:00"
     },
     {
       "slug": "rust-async",
@@ -144,7 +103,77 @@
         }
       ],
       "inbound_count": 4,
-      "processed_at": "2025-09-18T08:33:55.894803648+00:00"
+      "processed_at": "2025-09-17T16:46:45.394447534+00:00"
+    },
+    {
+      "slug": "web-development",
+      "title": "Web開発の基礎",
+      "content": "\n# Web開発の基礎\n\nフロントエンドとバックエンドの基本概念について説明します。\n\n## フロントエンド開発\n\n- HTML/CSS/JavaScript\n- モダンフレームワーク\n- レスポンシブデザイン\n\n## バックエンド開発\n\n- サーバーサイド言語\n- データベース設計\n- API設計\n\nこのポートフォリオサイト自体も、[[hello]]で紹介したように、Yewフレームワークを使用したWeb開発の実例です。",
+      "metadata": {
+        "title": "Web開発の基礎",
+        "home_display": true,
+        "category": "web",
+        "importance": 3,
+        "related_articles": [],
+        "tags": [
+          "web",
+          "frontend",
+          "backend",
+          "development"
+        ],
+        "created_at": "2024-01-05T00:00:00Z",
+        "updated_at": "2024-01-05T00:00:00Z"
+      },
+      "file_path": "articles/web-development.md",
+      "outbound_links": [
+        {
+          "target_slug": "hello",
+          "link_type": "WikiLink",
+          "context": "- サーバーサイド言語 - データベース設計 - API設計 このポートフォリオサイト自体も、[[hello]]で紹介したように、Yewフレームワークを使用したWeb開発の実例です。",
+          "position": 380,
+          "original_text": "[[hello]]"
+        }
+      ],
+      "inbound_count": 1,
+      "processed_at": "2025-09-17T16:46:45.395655089+00:00"
+    },
+    {
+      "slug": "async-patterns",
+      "title": "非同期パターン集",
+      "content": "\n# 非同期パターン集\n\n[[rust-async]]で使える実用的なパターンを紹介します。\n\n## よく使われるパターン\n\n### 1. 並行処理パターン\n複数のタスクを同時に実行する方法。\n\n### 2. エラーハンドリングパターン\n非同期処理でのエラー処理のベストプラクティス。\n\n### 3. リソース管理パターン\n非同期コンテキストでのリソースの適切な管理。\n\nこれらのパターンは[[tokio-basics]]の知識を前提としています。",
+      "metadata": {
+        "title": "非同期パターン集",
+        "home_display": false,
+        "category": "programming",
+        "importance": 2,
+        "related_articles": [],
+        "tags": [
+          "async",
+          "patterns",
+          "rust"
+        ],
+        "created_at": "2024-01-04T00:00:00Z",
+        "updated_at": "2024-01-04T00:00:00Z"
+      },
+      "file_path": "articles/async-patterns.md",
+      "outbound_links": [
+        {
+          "target_slug": "rust-async",
+          "link_type": "WikiLink",
+          "context": "# 非同期パターン集 [[rust-async]]で使える実用的なパターンを紹介します。 ## よく使われるパターン ###",
+          "position": 29,
+          "original_text": "[[rust-async]]"
+        },
+        {
+          "target_slug": "tokio-basics",
+          "link_type": "WikiLink",
+          "context": "### 3. リソース管理パターン 非同期コンテキストでのリソースの適切な管理。 これらのパターンは[[tokio-basics]]の知識を前提としています。",
+          "position": 473,
+          "original_text": "[[tokio-basics]]"
+        }
+      ],
+      "inbound_count": 1,
+      "processed_at": "2025-09-17T16:46:45.397497196+00:00"
     },
     {
       "slug": "broken-link-test",
@@ -184,85 +213,56 @@
         }
       ],
       "inbound_count": 0,
-      "processed_at": "2025-09-18T08:33:55.895351101+00:00"
+      "processed_at": "2025-09-17T16:46:45.399327194+00:00"
     },
     {
-      "slug": "web-development",
-      "title": "Web開発の基礎",
-      "content": "\n# Web開発の基礎\n\nフロントエンドとバックエンドの基本概念について説明します。\n\n## フロントエンド開発\n\n- HTML/CSS/JavaScript\n- モダンフレームワーク\n- レスポンシブデザイン\n\n## バックエンド開発\n\n- サーバーサイド言語\n- データベース設計\n- API設計\n\nこのポートフォリオサイト自体も、[[hello]]で紹介したように、Yewフレームワークを使用したWeb開発の実例です。",
+      "slug": "hello",
+      "title": "Hello World - はじめに",
+      "content": "\n# Hello World - はじめに\n\nこれはインタラクティブマインドマップポートフォリオのサンプル記事です。\n\nこのポートフォリオでは、記事間の関連性を視覚的に表現し、[[rust-async]]や[Web開発の基礎](web-development)などの技術記事を探索できます。\n\n## 特徴\n\n- 箇条書き 1: 物理演算による動的レイアウト\n- 箇条書き 2: インタラクティブなノード操作\n\n外部リンク: [Yew](https://yew.rs)",
       "metadata": {
-        "title": "Web開発の基礎",
+        "title": "Hello World - はじめに",
         "home_display": true,
-        "category": "web",
-        "importance": 3,
-        "related_articles": [],
-        "tags": [
-          "web",
-          "frontend",
-          "backend",
-          "development"
+        "category": "introduction",
+        "importance": 4,
+        "related_articles": [
+          "rust-async",
+          "web-development"
         ],
-        "created_at": "2024-01-05T00:00:00Z",
-        "updated_at": "2024-01-05T00:00:00Z"
-      },
-      "file_path": "articles/web-development.md",
-      "outbound_links": [
-        {
-          "target_slug": "hello",
-          "link_type": "WikiLink",
-          "context": "- サーバーサイド言語 - データベース設計 - API設計 このポートフォリオサイト自体も、[[hello]]で紹介したように、Yewフレームワークを使用したWeb開発の実例です。",
-          "position": 380,
-          "original_text": "[[hello]]"
-        }
-      ],
-      "inbound_count": 1,
-      "processed_at": "2025-09-18T08:33:55.895825518+00:00"
-    },
-    {
-      "slug": "tokio-basics",
-      "title": "Tokio入門",
-      "content": "\n# Tokio入門\n\nTokioは[[rust-async]]の基礎となる非同期ランタイムです。\n\n## Tokioの特徴\n\n- 高性能な非同期I/O\n- タスクスケジューリング\n- タイマーとタイムアウト\n\n## 基本的な使用方法\n\n```rust\n#[tokio::main]\nasync fn main() {\n    println!(\"Hello, Tokio!\");\n}\n```\n\nこの記事は[[rust-async]]と密接に関連しており、非同期プログラミングの実装面を扱います。",
-      "metadata": {
-        "title": "Tokio入門",
-        "home_display": true,
-        "category": "programming",
-        "importance": 3,
-        "related_articles": [],
         "tags": [
-          "rust",
-          "tokio",
-          "async"
+          "hello",
+          "introduction",
+          "portfolio"
         ],
-        "created_at": "2024-01-03T00:00:00Z",
-        "updated_at": "2024-01-03T00:00:00Z"
+        "created_at": "2024-01-01T00:00:00Z",
+        "updated_at": "2024-01-01T00:00:00Z"
       },
-      "file_path": "articles/tokio-basics.md",
+      "file_path": "articles/hello.md",
       "outbound_links": [
         {
           "target_slug": "rust-async",
           "link_type": "WikiLink",
-          "context": "# Tokio入門 Tokioは[[rust-async]]の基礎となる非同期ランタイムです。 ## Tokioの特徴 - 高性能な非同期I/O",
-          "position": 24,
+          "context": "これはインタラクティブマインドマップポートフォリオのサンプル記事です。 このポートフォリオでは、記事間の関連性を視覚的に表現し、[[rust-async]]や[Web開発の基礎](web-develo",
+          "position": 222,
           "original_text": "[[rust-async]]"
         },
         {
-          "target_slug": "rust-async",
-          "link_type": "WikiLink",
-          "context": "main() { println!(\"Hello, Tokio!\"); } ``` この記事は[[rust-async]]と密接に関連しており、非同期プログラミングの実装面を扱います。",
-          "position": 333,
-          "original_text": "[[rust-async]]"
+          "target_slug": "web-development",
+          "link_type": "MarkdownLink",
+          "context": "これはインタラクティブマインドマップポートフォリオのサンプル記事です。 このポートフォリオでは、記事間の関連性を視覚的に表現し、[[rust-async]]や[Web開発の基礎](web-develo",
+          "position": 239,
+          "original_text": "[Web開発の基礎](web-development)"
         }
       ],
       "inbound_count": 2,
-      "processed_at": "2025-09-18T08:33:55.896540645+00:00"
+      "processed_at": "2025-09-17T16:46:45.400706205+00:00"
     }
   ],
-  "generated_at": "2025-09-18T08:33:55.896674886+00:00",
+  "generated_at": "2025-09-17T16:46:45.400884608+00:00",
   "total_count": 7,
   "home_articles": [
-    "hello",
+    "tokio-basics",
     "rust-async",
     "web-development",
-    "tokio-basics"
+    "hello"
   ]
 }

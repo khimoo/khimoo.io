@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://khimoo.github.io/khimoo.io/sitemap.xml
