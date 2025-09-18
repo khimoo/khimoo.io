@@ -1,25 +1,7 @@
 {
   "graph": {
-    "web-development": {
-      "connections": [
-        {
-          "target": "hello",
-          "connection_type": "Bidirectional",
-          "bidirectional": true,
-          "link_count": 1
-        }
-      ],
-      "inbound_count": 1,
-      "outbound_count": 1
-    },
     "rust-async": {
       "connections": [
-        {
-          "target": "hello",
-          "connection_type": "Bidirectional",
-          "bidirectional": true,
-          "link_count": 1
-        },
         {
           "target": "tokio-basics",
           "connection_type": "Bidirectional",
@@ -28,6 +10,12 @@
         },
         {
           "target": "async-patterns",
+          "connection_type": "Bidirectional",
+          "bidirectional": true,
+          "link_count": 1
+        },
+        {
+          "target": "hello",
           "connection_type": "Bidirectional",
           "bidirectional": true,
           "link_count": 1
@@ -46,6 +34,23 @@
         }
       ],
       "inbound_count": 2,
+      "outbound_count": 2
+    },
+    "web-development": {
+      "connections": [
+        {
+          "target": "hello",
+          "connection_type": "Bidirectional",
+          "bidirectional": true,
+          "link_count": 1
+        }
+      ],
+      "inbound_count": 1,
+      "outbound_count": 1
+    },
+    "broken-link-test": {
+      "connections": [],
+      "inbound_count": 0,
       "outbound_count": 2
     },
     "hello": {
@@ -88,14 +93,9 @@
       ],
       "inbound_count": 1,
       "outbound_count": 2
-    },
-    "broken-link-test": {
-      "connections": [],
-      "inbound_count": 0,
-      "outbound_count": 2
     }
   },
-  "generated_at": "2025-09-18T08:26:02.385325456+00:00",
+  "generated_at": "2025-09-18T08:34:00.665627006+00:00",
   "total_connections": 9,
   "bidirectional_pairs": 4,
   "direct_links": 1
