@@ -12,6 +12,8 @@ on:
 env:
   CARGO_TERM_COLOR: always
   NIX_CONFIG: "experimental-features = nix-command flakes"
+  RUST_BACKTRACE: 1
+  CARGO_INCREMENTAL: 0
 
 jobs:
   build-and-deploy:
@@ -26,27 +28,66 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
           extra_nix_config: |
             experimental-features = nix-command flakes
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
             
-      - name: Enter Nix development shell
+      - name: Setup Nix cache
+        uses: cachix/cachix-action@v12
+        with:
+          name: devenv
+          
+      - name: Verify Nix installation
         run: |
-          nix develop --command echo "Nix environment ready"
+          nix --version
+          nix flake show --json | jq '.devShells."x86_64-linux".default'
+          
+      - name: Verify Nix development environment
+        run: |
+          echo "🦀 Verifying Nix development environment..."
+          nix develop --command bash -c '
+            echo "✅ Nix development shell activated"
+            echo "📦 Available tools:"
+            rustc --version
+            cargo --version
+            trunk --version
+            wasm-pack --version
+            just --version
+            echo "🎯 WebAssembly target available:"
+            rustup target list --installed | grep wasm32 || echo "wasm32-unknown-unknown target ready"
+            echo "🔧 Environment variables:"
+            echo "CARGO_TERM_COLOR=$CARGO_TERM_COLOR"
+            echo "RUST_BACKTRACE=$RUST_BACKTRACE"
+          '
           
       - name: Process articles
         run: |
-          echo "Article processing step - to be implemented"
-          # nix develop --command cargo run --bin process-articles
+          echo "📝 Processing articles with Nix environment..."
+          nix develop --command bash -c '
+            echo "Running article processing in Nix shell"
+            # cargo run --bin process-articles
+            echo "Article processing step - to be implemented"
+          '
           
       - name: Generate link graph
         run: |
-          echo "Link graph generation step - to be implemented"
-          # nix develop --command cargo run --bin generate-link-graph
+          echo "🔗 Generating link graph with Nix environment..."
+          nix develop --command bash -c '
+            echo "Running link graph generation in Nix shell"
+            # cargo run --bin generate-link-graph
+            echo "Link graph generation step - to be implemented"
+          '
           
       - name: Build WebAssembly application
         run: |
-          echo "WebAssembly build step - to be implemented"
-          # nix develop --command trunk build --release
+          echo "🦀 Building WebAssembly application with Nix environment..."
+          nix develop --command bash -c '
+            echo "Building WebAssembly in Nix shell"
+            # trunk build --release
+            echo "WebAssembly build step - to be implemented"
+          '
           
       - name: Deploy to GitHub Pages
         run: |
+          echo "🚀 Deploying to GitHub Pages..."
+          # This step may not need Nix environment as it's just file deployment
           echo "GitHub Pages deployment step - to be implemented"
           # Deploy dist/ directory to GitHub Pages

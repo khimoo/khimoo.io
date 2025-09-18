@@ -2,7 +2,7 @@
 
 ## Phase 1: 基本的な記事デプロイ機能
 
-- [ ] 1. GitHub Actionsワークフローの基本構造を作成
+- [x] 1. GitHub Actionsワークフローの基本構造を作成
   - `.github/workflows/ci-cd.yml`ファイルを作成
   - feature/github-actionsブランチへのpushトリガーを設定（開発用）
   - 基本的なjob構造を定義
