@@ -141,9 +141,32 @@ jobs:
           echo "📁 Preparing deployment directory..."
           cp -r ./khimoo-portfolio/dist ./public
           cp ./public/index.html ./public/404.html
+          cp ./test-data-loader.html ./public/test-data-loader.html
           echo "✅ Deployment directory prepared"
           echo "📊 Public directory contents:"
           ls -la ./public/
+          echo "📊 Data directory contents:"
+          ls -la ./public/data/ || echo "❌ Data directory not found in public!"
+          echo "📄 Checking articles.json in public:"
+          if [ -f "./public/data/articles.json" ]; then
+            echo "✅ articles.json found in public directory"
+            echo "📊 File size:"
+            ls -lh ./public/data/articles.json
+            echo "📄 Articles data preview (first 5 lines):"
+            head -5 ./public/data/articles.json
+            echo "🔍 Checking for home_display articles:"
+            grep -c '"home_display": true' ./public/data/articles.json || echo "No home_display articles found"
+          else
+            echo "❌ articles.json not found in public directory!"
+          fi
+          echo "📄 Checking link-graph.json in public:"
+          if [ -f "./public/data/link-graph.json" ]; then
+            echo "✅ link-graph.json found in public directory"
+            echo "📊 File size:"
+            ls -lh ./public/data/link-graph.json
+          else
+            echo "❌ link-graph.json not found in public directory!"
+          fi
           
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
@@ -162,3 +185,13 @@ jobs:
           echo "📝 Deployment commit: ${{ github.sha }}"
           echo "📁 Deployed files:"
           ls -la ./public/
+          echo "📊 Total deployment size:"
+          du -sh ./public/
+          echo "🔍 Final verification - checking critical files:"
+          echo "  - index.html: $([ -f ./public/index.html ] && echo '✅' || echo '❌')"
+          echo "  - 404.html: $([ -f ./public/404.html ] && echo '✅' || echo '❌')"
+          echo "  - data/articles.json: $([ -f ./public/data/articles.json ] && echo '✅' || echo '❌')"
+          echo "  - data/link-graph.json: $([ -f ./public/data/link-graph.json ] && echo '✅' || echo '❌')"
+          echo "📈 Expected data loading URLs:"
+          echo "  - Articles: https://${{ github.repository_owner }}.github.io/khimoo.io/data/articles.json"
+          echo "  - Link Graph: https://${{ github.repository_owner }}.github.io/khimoo.io/data/link-graph.json"

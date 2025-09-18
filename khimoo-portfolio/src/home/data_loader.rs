@@ -178,9 +178,37 @@ pub struct DataLoader {
 
 impl DataLoader {
     pub fn new() -> Self {
-        Self {
-            base_url: "/data".to_string(),
+        // Automatically detect the correct base URL based on the current location
+        let base_url = Self::detect_base_url();
+        Self { base_url }
+    }
+    
+    // Detect the correct base URL based on the current window location
+    fn detect_base_url() -> String {
+        if let Some(window) = web_sys::window() {
+            if let Some(location) = window.location().pathname().ok() {
+                web_sys::console::log_1(&format!("DataLoader: Current pathname: {}", location).into());
+                
+                // If we're in a subdirectory (like /khimoo.io/), use that as the base
+                if location.starts_with("/khimoo.io/") || location.contains("/khimoo.io") {
+                    web_sys::console::log_1(&"DataLoader: Detected GitHub Pages subdirectory, using /khimoo.io/data".into());
+                    return "/khimoo.io/data".to_string();
+                }
+            }
+            
+            // Also check the hostname for additional context
+            if let Some(hostname) = window.location().hostname().ok() {
+                web_sys::console::log_1(&format!("DataLoader: Current hostname: {}", hostname).into());
+                if hostname.contains("github.io") {
+                    web_sys::console::log_1(&"DataLoader: Detected GitHub Pages, using /khimoo.io/data".into());
+                    return "/khimoo.io/data".to_string();
+                }
+            }
         }
+        
+        web_sys::console::log_1(&"DataLoader: Using default base URL: /data".into());
+        // Default fallback
+        "/data".to_string()
     }
 
     pub fn with_base_url(base_url: String) -> Self {
@@ -191,8 +219,15 @@ impl DataLoader {
     pub async fn load_articles(&self) -> Result<ArticlesData, DataLoadError> {
         let url = format!("{}/articles.json", self.base_url);
         
+        // Debug logging
+        web_sys::console::log_1(&format!("DataLoader: Attempting to load articles from: {}", url).into());
+        web_sys::console::log_1(&format!("DataLoader: Base URL detected as: {}", self.base_url).into());
+        
         match self.fetch_json::<ArticlesData>(&url).await {
-            Ok(data) => Ok(data),
+            Ok(data) => {
+                web_sys::console::log_1(&format!("DataLoader: Successfully loaded {} articles", data.articles.len()).into());
+                Ok(data)
+            },
             Err(e) => {
                 web_sys::console::warn_1(&format!("Failed to load articles data: {}", e).into());
                 // Fallback to empty data structure
