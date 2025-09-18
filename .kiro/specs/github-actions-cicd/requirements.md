@@ -42,3 +42,14 @@
 3. WHEN エラーが発生する THEN システムは簡潔で分かりやすいエラーメッセージを提供する SHALL
 4. WHEN ビルドプロセスが実行される THEN システムはビルド時間の最適化を重視する SHALL
 
+### Requirement 4
+
+**User Story:** ポートフォリオの管理者として、GitHub ActionsがGitHub Pagesに正常にデプロイできることを期待する。そうすることで、権限エラーやデプロイ失敗を回避し、安定したCI/CDパイプラインを維持できる。
+
+#### Acceptance Criteria
+
+1. WHEN GitHub Actionsワークフローが実行される THEN システムは適切な権限設定でGitHub Pagesにアクセスできる SHALL
+2. WHEN デプロイプロセスが開始される THEN システムはgithub-actions[bot]の権限不足エラーを回避する SHALL
+3. WHEN 複数のワークフローが存在する THEN システムは競合を避けて単一のデプロイメント戦略を使用する SHALL
+4. WHEN リポジトリ設定が変更される THEN システムはGitHub Pages設定との整合性を保つ SHALL
+

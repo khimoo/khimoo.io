@@ -84,11 +84,20 @@ jobs:
           path: khimoo-portfolio/dist/
           retention-days: 30
           
+      - name: Prepare deployment directory
+        run: |
+          echo "📁 Preparing deployment directory..."
+          cp -r ./khimoo-portfolio/dist ./public
+          cp ./public/index.html ./public/404.html
+          echo "✅ Deployment directory prepared"
+          echo "📊 Public directory contents:"
+          ls -la ./public/
+          
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./khimoo-portfolio/dist
+          publish_dir: ./public
           force_orphan: true
           user_name: 'github-actions[bot]'
           user_email: 'github-actions[bot]@users.noreply.github.com'
@@ -99,3 +108,5 @@ jobs:
           echo "✅ GitHub Pages deployment completed"
           echo "🌐 Site will be available at: https://${{ github.repository_owner }}.github.io/khimoo.io/"
           echo "📝 Deployment commit: ${{ github.sha }}"
+          echo "📁 Deployed files:"
+          ls -la ./public/
