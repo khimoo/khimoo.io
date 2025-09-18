@@ -2,7 +2,7 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [main]
+    branches: [feature/github-actions]
     paths: 
       - 'khimoo-portfolio/**'
       - 'articles/**'
@@ -20,25 +20,33 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         
-      - name: Setup Nix
+      - name: Setup Nix environment
         uses: cachix/install-nix-action@v22
         with:
           nix_path: nixpkgs=channel:nixos-unstable
           extra_nix_config: |
             experimental-features = nix-command flakes
             
+      - name: Enter Nix development shell
+        run: |
+          nix develop --command echo "Nix environment ready"
+          
       - name: Process articles
         run: |
           echo "Article processing step - to be implemented"
+          # nix develop --command cargo run --bin process-articles
           
       - name: Generate link graph
         run: |
           echo "Link graph generation step - to be implemented"
+          # nix develop --command cargo run --bin generate-link-graph
           
-      - name: Build WebAssembly
+      - name: Build WebAssembly application
         run: |
           echo "WebAssembly build step - to be implemented"
+          # nix develop --command trunk build --release
           
       - name: Deploy to GitHub Pages
         run: |
           echo "GitHub Pages deployment step - to be implemented"
+          # Deploy dist/ directory to GitHub Pages
