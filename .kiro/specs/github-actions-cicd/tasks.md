@@ -35,7 +35,7 @@ GitHub Actionsでの処理は必要最小限に留め、以下の原則に従っ
   - ビルド成果物をアーティファクトとして保存
   - _Requirements: 2.1, 2.2_
 
-- [x] 5. GitHub Pagesデプロイメントの実装
+- [ ] 5. GitHub Pagesデプロイメントの実装
   - peaceiris/actions-gh-pages@v3を使用したデプロイステップを追加(参考ファイル： /home/pomu/sagyo/khimoo.io/.github/workflows/gh-pages.yml)
   - dist/ディレクトリをGitHub Pagesに公開
   - デプロイ完了の確認
