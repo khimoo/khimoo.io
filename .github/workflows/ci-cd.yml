@@ -60,8 +60,25 @@ jobs:
           
       - name: Build WebAssembly application
         run: |
-          echo "WebAssembly build step - to be implemented"
-          # nix develop --command trunk build --release
+          echo "🚀 Building WebAssembly application with Trunk..."
+          cd khimoo-portfolio
+          nix develop --command trunk build --release --public-url /khimoo.io/
+          echo "✅ WebAssembly build completed"
+          
+      - name: Verify build artifacts
+        run: |
+          echo "🔍 Verifying build artifacts..."
+          ls -la khimoo-portfolio/dist/
+          echo "📊 Build artifact sizes:"
+          du -h khimoo-portfolio/dist/
+          echo "✅ Build verification completed"
+          
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: webassembly-build
+          path: khimoo-portfolio/dist/
+          retention-days: 30
           
       - name: Deploy to GitHub Pages
         run: |
