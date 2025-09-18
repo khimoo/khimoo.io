@@ -55,8 +55,40 @@ jobs:
           
       - name: Process articles
         run: |
-          echo "Article processing step - to be implemented"
-          # nix develop --command cargo run --bin process-articles
+          echo "📚 Processing articles and generating metadata..."
+          cd khimoo-portfolio
+          mkdir -p data
+          nix develop --command cargo run --features cli-tools --bin process-articles -- --articles-dir articles --output-dir data --verbose
+          echo "✅ Article processing completed"
+          
+      - name: Verify article processing results
+        run: |
+          echo "🔍 Verifying article processing results..."
+          if [ -f "khimoo-portfolio/data/articles.json" ]; then
+            echo "✅ articles.json generated successfully"
+            echo "📊 Articles data file size:"
+            ls -lh khimoo-portfolio/data/articles.json
+            echo "📄 Articles data preview (first 10 lines):"
+            head -10 khimoo-portfolio/data/articles.json
+            echo "📈 Processing summary:"
+            echo "   📁 Generated data files:"
+            ls -la khimoo-portfolio/data/
+          else
+            echo "❌ articles.json not found!"
+            exit 1
+          fi
+          
+      - name: Upload article processing artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: article-processing-results
+          path: |
+            khimoo-portfolio/data/articles.json
+            khimoo-portfolio/data/link-graph.json
+            khimoo-portfolio/data/validation-report.json
+            khimoo-portfolio/data/validation-report.txt
+            khimoo-portfolio/data/validation-summary.txt
+          retention-days: 30
           
       - name: Generate link graph
         run: |

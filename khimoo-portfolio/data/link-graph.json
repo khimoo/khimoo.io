@@ -15,9 +15,28 @@
       ],
       "inbound_count": 2
     },
+    "broken-link-test": {
+      "connections": [],
+      "inbound_count": 0
+    },
     "readme": {
       "connections": [],
       "inbound_count": 0
+    },
+    "async-patterns": {
+      "connections": [
+        {
+          "target": "rust-async",
+          "connection_type": "Bidirectional",
+          "bidirectional": true
+        },
+        {
+          "target": "tokio-basics",
+          "connection_type": "DirectLink",
+          "bidirectional": false
+        }
+      ],
+      "inbound_count": 1
     },
     "rust-async": {
       "connections": [
@@ -39,22 +58,7 @@
       ],
       "inbound_count": 4
     },
-    "async-patterns": {
-      "connections": [
-        {
-          "target": "rust-async",
-          "connection_type": "Bidirectional",
-          "bidirectional": true
-        },
-        {
-          "target": "tokio-basics",
-          "connection_type": "DirectLink",
-          "bidirectional": false
-        }
-      ],
-      "inbound_count": 1
-    },
-    "broken-link-test": {
+    "test": {
       "connections": [],
       "inbound_count": 0
     },
@@ -84,6 +88,6 @@
       "inbound_count": 2
     }
   },
-  "generated_at": "2025-09-17T16:46:45.400850555+00:00",
+  "generated_at": "2025-09-18T12:05:34.175904981+00:00",
   "total_connections": 10
 }
