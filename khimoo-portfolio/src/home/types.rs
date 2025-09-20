@@ -28,10 +28,10 @@ pub struct ForceSettings {
 impl Default for ForceSettings {
     fn default() -> Self {
         Self {
-            repulsion_strength: 50000.0,
-            repulsion_min_distance: 400.0,
+            repulsion_strength: 68000.0,
+            repulsion_min_distance: 150.0,
             link_strength: 5000.0,
-            center_strength: 3000.0,
+            center_strength: 6000.0,
             center_damping: 5.0,
             // Author node defaults
             author_attraction_strength: 2000.0,

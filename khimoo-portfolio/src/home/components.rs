@@ -31,7 +31,7 @@ fn determine_node_content(article: &ProcessedArticle) -> NodeContent {
             article.title,
             image_url
         ).into());
-        
+
         NodeContent::Author {
             name: article.title.clone(),
             image_url: image_url.clone(),
@@ -79,7 +79,7 @@ fn create_node_registry_from_articles(articles_data: &ArticlesData, container_bo
     if home_articles.is_empty() {
         #[cfg(target_arch = "wasm32")]
         web_sys::console::warn_1(&"No home articles found! Creating fallback author node".into());
-        
+
         reg.add_node(
             NodeId(next_id),
             Position { x: center_x, y: center_y },
@@ -101,10 +101,10 @@ fn create_node_registry_from_articles(articles_data: &ArticlesData, container_bo
 
     for (index, article) in home_articles.iter().enumerate() {
         let node_id = NodeId(next_id);
-        
+
         // 記事の内容に基づいてNodeContentを決定
         let content = determine_node_content(article);
-        
+
         // 作者記事の場合は中央に配置し、大きめのサイズにする
         let (position, base_radius) = if article.metadata.author_image.is_some() {
             #[cfg(target_arch = "wasm32")]
@@ -469,7 +469,7 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
                                 <input
                                     type="range"
                                     min="0"
-                                    max="3000"
+                                    max="10000"
                                     step="1"
                                     value={force_settings.center_strength.to_string()}
                                     onchange={on_center_strength_change.clone()}
