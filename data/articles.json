@@ -18,7 +18,7 @@
       "file_path": "articles/README.md",
       "outbound_links": [],
       "inbound_count": 0,
-      "processed_at": "2025-09-18T17:00:31.810011126+00:00"
+      "processed_at": "2025-09-20T07:24:34.655948981+00:00"
     },
     {
       "slug": "hello",
@@ -60,7 +60,7 @@
         }
       ],
       "inbound_count": 2,
-      "processed_at": "2025-09-18T17:00:31.811159280+00:00"
+      "processed_at": "2025-09-20T07:24:34.657073656+00:00"
     },
     {
       "slug": "async-patterns",
@@ -68,7 +68,7 @@
       "content": "\n# 非同期パターン集\n\n[[rust-async]]で使える実用的なパターンを紹介します。\n\n## よく使われるパターン\n\n### 1. 並行処理パターン\n複数のタスクを同時に実行する方法。\n\n### 2. エラーハンドリングパターン\n非同期処理でのエラー処理のベストプラクティス。\n\n### 3. リソース管理パターン\n非同期コンテキストでのリソースの適切な管理。\n\nこれらのパターンは[[tokio-basics]]の知識を前提としています。",
       "metadata": {
         "title": "非同期パターン集",
-        "home_display": false,
+        "home_display": true,
         "category": "programming",
         "importance": 2,
         "related_articles": [],
@@ -98,8 +98,8 @@
           "original_text": "[[tokio-basics]]"
         }
       ],
-      "inbound_count": 1,
-      "processed_at": "2025-09-18T17:00:31.812002617+00:00"
+      "inbound_count": 2,
+      "processed_at": "2025-09-20T07:24:34.657865501+00:00"
     },
     {
       "slug": "rust-async",
@@ -148,7 +148,7 @@
         }
       ],
       "inbound_count": 4,
-      "processed_at": "2025-09-18T17:00:31.812903542+00:00"
+      "processed_at": "2025-09-20T07:24:34.658712800+00:00"
     },
     {
       "slug": "test",
@@ -168,7 +168,7 @@
       "file_path": "articles/test.md",
       "outbound_links": [],
       "inbound_count": 0,
-      "processed_at": "2025-09-18T17:00:31.812993760+00:00"
+      "processed_at": "2025-09-20T07:24:34.658801786+00:00"
     },
     {
       "slug": "broken-link-test",
@@ -209,15 +209,15 @@
         }
       ],
       "inbound_count": 0,
-      "processed_at": "2025-09-18T17:00:31.813664416+00:00"
+      "processed_at": "2025-09-20T07:24:34.659382538+00:00"
     },
     {
       "slug": "about-khimoo",
       "title": "Khimoo",
-      "content": "\n# About Khimoo\n\nSoftware developer passionate about Rust and web technologies.\n\n## Background\n\nI'm a developer who enjoys building interactive web applications and exploring the latest technologies in the Rust ecosystem. This portfolio showcases my work and thoughts on various technical topics.\n\n## Interests\n\n- Rust programming language\n- Web development with Yew\n- Interactive data visualization\n- Physics simulations\n- Modern web technologies\n\n## Contact\n\nFeel free to explore the articles and projects in this interactive mindmap portfolio. Each node represents a different aspect of my work and interests.\n\nThe articles are interconnected, showing relationships between different topics and technologies I work with.",
+      "content": "\n# About Khimoo\n\nSoftware developer passionate about Rust and web technologies.\n\n## Background\n\nI'm a developer who enjoys building interactive web applications and exploring the latest technologies in the Rust ecosystem. This portfolio showcases my work and thoughts on various technical topics.\n\n## Interests\n\n- Rust programming language\n- Web development with Yew\n- Interactive data visualization\n- Physics simulations\n- Modern web technologies\n\n## Contact\n\nFeel free to explore the articles and projects in this interactive mindmap portfolio. Each node represents a different aspect of my work and interests.\n\nThe articles are interconnected, showing relationships between different topics and technologies I work with.\n\n[[async-patterns]]",
       "metadata": {
         "title": "Khimoo",
-        "home_display": false,
+        "home_display": true,
         "category": "author",
         "importance": 5,
         "related_articles": [],
@@ -231,9 +231,17 @@
         "author_image": "https://avatars.githubusercontent.com/u/1?v=4"
       },
       "file_path": "articles/about-khimoo.md",
-      "outbound_links": [],
+      "outbound_links": [
+        {
+          "target_slug": "async-patterns",
+          "link_type": "WikiLink",
+          "context": "between different topics and technologies I work with. [[async-patterns]]",
+          "position": 725,
+          "original_text": "[[async-patterns]]"
+        }
+      ],
       "inbound_count": 0,
-      "processed_at": "2025-09-18T17:00:31.813944497+00:00"
+      "processed_at": "2025-09-20T07:24:34.659939886+00:00"
     },
     {
       "slug": "web-development",
@@ -266,7 +274,7 @@
         }
       ],
       "inbound_count": 1,
-      "processed_at": "2025-09-18T17:00:31.814461788+00:00"
+      "processed_at": "2025-09-20T07:24:34.660506592+00:00"
     },
     {
       "slug": "tokio-basics",
@@ -305,14 +313,16 @@
         }
       ],
       "inbound_count": 2,
-      "processed_at": "2025-09-18T17:00:31.815386527+00:00"
+      "processed_at": "2025-09-20T07:24:34.661433318+00:00"
     }
   ],
-  "generated_at": "2025-09-18T17:00:31.815552425+00:00",
+  "generated_at": "2025-09-20T07:24:34.661575614+00:00",
   "total_count": 9,
   "home_articles": [
     "hello",
+    "async-patterns",
     "rust-async",
+    "about-khimoo",
     "web-development",
     "tokio-basics"
   ]
