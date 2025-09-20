@@ -30,11 +30,13 @@
                                 │
                                 ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                   Node Registry Creation                     │
+│                   Unified Node Processing                    │
 ├─────────────────────────────────────────────────────────────┤
-│ 1. 記事データから author_image を持つファイルを検索        │
-│ 2. 見つかった場合は NodeContent::Author を作成             │
-│ 3. 見つからない場合は従来のハードコーディング方式を使用    │
+│ 1. 全記事（作者記事含む）を統一的に処理                    │
+│ 2. author_image を持つ記事は NodeContent::Author を作成    │
+│ 3. 一般記事は NodeContent::Text を作成                     │
+│ 4. 全記事に対して通常のID割り当てロジックを適用            │
+│ 5. リンク処理も全記事に対して統一的に実行                  │
 └─────────────────────────────────────────────────────────────┘
                                 │
                                 ▼
@@ -42,6 +44,7 @@
 │                    Node Rendering                           │
 ├─────────────────────────────────────────────────────────────┤
 │ NodeContent::Author の render_content() で画像を表示       │
+│ NodeContent::Text の render_content() でテキスト表示       │
 │ （既存の実装をそのまま使用）                               │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -68,21 +71,30 @@ pub struct ProcessedMetadata {
 }
 ```
 
-### 2. Author Node Detection Logic
+### 2. Unified Article Processing Logic
 
-新しい関数を`components.rs`に追加：
+作者ノード検索ロジックを削除し、統一的な記事処理に変更：
 
 ```rust
-fn find_author_article(articles_data: &ArticlesData) -> Option<&ProcessedArticle> {
-    articles_data.articles
-        .iter()
-        .find(|article| article.metadata.author_image.is_some())
+// 作者ノード検索関数は削除
+// 代わりに記事処理時に author_image の存在をチェック
+
+fn determine_node_content(article: &ProcessedArticle) -> NodeContent {
+    if let Some(image_url) = &article.metadata.author_image {
+        NodeContent::Author {
+            name: article.title.clone(),
+            image_url: image_url.clone(),
+            bio: None,
+        }
+    } else {
+        NodeContent::Text(article.title.clone())
+    }
 }
 ```
 
-### 3. Node Registry Creation Updates
+### 3. Unified Node Registry Creation
 
-`create_node_registry_from_articles`関数を更新：
+`create_node_registry_from_articles`関数を完全に書き直し：
 
 ```rust
 fn create_node_registry_from_articles(
@@ -97,37 +109,72 @@ fn create_node_registry_from_articles(
     let center_x = container_bound.width / 2.0;
     let center_y = container_bound.height / 2.0;
     
-    // 作者ノードの検索と作成
-    if let Some(author_article) = find_author_article(articles_data) {
-        // メタデータベースの作者ノード作成
-        let author_content = NodeContent::Author {
-            name: author_article.title.clone(),
-            image_url: author_article.metadata.author_image.clone().unwrap(),
-            bio: None, // 将来的に author_bio フィールドを追加可能
-        };
-        
-        reg.add_node(
-            NodeId(0),
-            Position { x: center_x, y: center_y },
-            60, // 作者ノードは大きめ
-            author_content,
-        );
-        
-        slug_to_id.insert(author_article.slug.clone(), NodeId(0));
-        id_to_slug.insert(NodeId(0), author_article.slug.clone());
-    } else {
+    // home_display=trueの記事のみをノードとして追加（作者記事も含む）
+    let home_articles: Vec<_> = articles_data.articles.iter()
+        .filter(|article| article.metadata.home_display)
+        .collect();
+
+    if home_articles.is_empty() {
         // フォールバック：従来のハードコーディング方式
         reg.add_node(
-            NodeId(0),
+            NodeId(next_id),
             Position { x: center_x, y: center_y },
             40,
             NodeContent::Text("Author".to_string()),
         );
-        slug_to_id.insert("author".to_string(), NodeId(0));
-        id_to_slug.insert(NodeId(0), "author".to_string());
+        slug_to_id.insert("author".to_string(), NodeId(next_id));
+        id_to_slug.insert(NodeId(next_id), "author".to_string());
+        return (reg, id_to_slug);
     }
-    
-    // 残りの処理は既存のまま...
+
+    // 作者記事を特定（最初に見つかったもの）
+    let author_article = home_articles.iter()
+        .find(|article| article.metadata.author_image.is_some());
+
+    // 円形配置の計算
+    let radius = (container_bound.width.min(container_bound.height) * 0.3).max(150.0);
+    let angle_step = 2.0 * std::f32::consts::PI / home_articles.len() as f32;
+
+    for (index, article) in home_articles.iter().enumerate() {
+        let angle = index as f32 * angle_step;
+        let x = center_x + radius * angle.cos();
+        let y = center_y + radius * angle.sin();
+
+        let node_id = NodeId(next_id);
+        
+        // 作者記事かどうかで表示内容を決定
+        let content = determine_node_content(article);
+        
+        // 作者記事の場合は中央に配置し、大きめのサイズにする
+        let (position, base_radius) = if article.metadata.author_image.is_some() {
+            (Position { x: center_x, y: center_y }, 60)
+        } else {
+            (Position { x, y }, 30)
+        };
+
+        reg.add_node(node_id, position, base_radius, content);
+
+        // 重要度とリンク数を設定
+        reg.set_node_importance(node_id, article.metadata.importance.unwrap_or(3));
+        reg.set_node_inbound_count(node_id, article.inbound_count);
+
+        slug_to_id.insert(article.slug.clone(), node_id);
+        id_to_slug.insert(node_id, article.slug.clone());
+        next_id += 1;
+    }
+
+    // 記事間のリンクを追加（作者記事も含む）
+    for article in &home_articles {
+        if let Some(&from_id) = slug_to_id.get(&article.slug) {
+            for link in &article.outbound_links {
+                if let Some(&to_id) = slug_to_id.get(&link.target_slug) {
+                    reg.add_edge(from_id, to_id);
+                }
+            }
+        }
+    }
+
+    (reg, id_to_slug)
 }
 ```
 

@@ -22,129 +22,49 @@ enum Route {
     ArticleShow { slug: String },
 }
 
-// 作者ノード検索機能：author_imageフィールドを持つ記事を検索
-fn find_author_article(articles_data: &ArticlesData) -> Option<&ProcessedArticle> {
-    // author_imageフィールドを持つ記事をすべて収集
-    let author_articles: Vec<&ProcessedArticle> = articles_data.articles
-        .iter()
-        .filter(|article| article.metadata.author_image.is_some())
-        .collect();
-    
-    // ログ出力（WebAssembly環境でのみ実行）
-    #[cfg(target_arch = "wasm32")]
-    {
-        web_sys::console::log_1(&format!("Found {} articles with author_image field", author_articles.len()).into());
-    }
-    
-    match author_articles.len() {
-        0 => {
-            #[cfg(target_arch = "wasm32")]
-            web_sys::console::log_1(&"No author_image found in any articles".into());
-            None
+// 記事の内容に基づいてNodeContentを決定する関数
+fn determine_node_content(article: &ProcessedArticle) -> NodeContent {
+    if let Some(image_url) = &article.metadata.author_image {
+        #[cfg(target_arch = "wasm32")]
+        web_sys::console::log_1(&format!(
+            "Creating author node for article: '{}' with image: '{}'",
+            article.title,
+            image_url
+        ).into());
+        
+        NodeContent::Author {
+            name: article.title.clone(),
+            image_url: image_url.clone(),
+            bio: None,
         }
-        1 => {
-            let author_article = author_articles[0];
-            #[cfg(target_arch = "wasm32")]
-            web_sys::console::log_1(&format!(
-                "Found author article: '{}' with image: '{}'", 
-                author_article.title,
-                author_article.metadata.author_image.as_ref().unwrap()
-            ).into());
-            Some(author_article)
-        }
-        _ => {
-            // 複数の作者記事が存在する場合は警告を出力し、最初のものを使用
-            #[cfg(target_arch = "wasm32")]
-            {
-                web_sys::console::warn_1(&format!(
-                    "Multiple articles with author_image found ({}). Using the first one: '{}'",
-                    author_articles.len(),
-                    author_articles[0].title
-                ).into());
-                
-                // すべての作者記事をログに出力
-                for (index, article) in author_articles.iter().enumerate() {
-                    web_sys::console::log_1(&format!(
-                        "  {}: '{}' ({})", 
-                        index + 1,
-                        article.title,
-                        article.metadata.author_image.as_ref().unwrap()
-                    ).into());
-                }
-            }
-            
-            Some(author_articles[0])
-        }
+    } else {
+        NodeContent::Text(article.title.clone())
     }
 }
 
-// ArticlesDataからNodeRegistryを生成する関数
+// ArticlesDataからNodeRegistryを生成する関数（統一処理版）
 fn create_node_registry_from_articles(articles_data: &ArticlesData, container_bound: &ContainerBound) -> (NodeRegistry, HashMap<NodeId, String>) {
     let mut reg = NodeRegistry::new();
     let mut slug_to_id = HashMap::new();
     let mut id_to_slug = HashMap::new();
     let mut next_id = 1u32;
-    
+
     // コンテナの中心を計算
     let center_x = container_bound.width / 2.0;
     let center_y = container_bound.height / 2.0;
-    
+
     // デバッグ情報
     #[cfg(target_arch = "wasm32")]
     {
         web_sys::console::log_1(&format!("Container bound in create_node_registry: {:?}", container_bound).into());
         web_sys::console::log_1(&format!("Calculated center: ({}, {})", center_x, center_y).into());
     }
-    
-    // 作者ノードの検索と作成
-    if let Some(author_article) = find_author_article(articles_data) {
-        // メタデータベースの作者ノード作成
-        #[cfg(target_arch = "wasm32")]
-        web_sys::console::log_1(&format!(
-            "Creating metadata-based author node: '{}' with image: '{}'", 
-            author_article.title,
-            author_article.metadata.author_image.as_ref().unwrap()
-        ).into());
-        
-        let author_content = NodeContent::Author {
-            name: author_article.title.clone(),
-            image_url: author_article.metadata.author_image.clone().unwrap(),
-            bio: None, // 将来的に author_bio フィールドを追加可能
-        };
-        
-        reg.add_node(
-            NodeId(0),
-            Position { x: center_x, y: center_y },
-            60, // 作者ノードは大きめ
-            author_content,
-        );
-        
-        slug_to_id.insert(author_article.slug.clone(), NodeId(0));
-        id_to_slug.insert(NodeId(0), author_article.slug.clone());
-    } else {
-        // フォールバック：従来のハードコーディング方式
-        #[cfg(target_arch = "wasm32")]
-        web_sys::console::warn_1(&"No author_image found, using fallback author node".into());
-        
-        reg.add_node(
-            NodeId(0),
-            Position { x: center_x, y: center_y },
-            40,
-            NodeContent::Text("Author".to_string()),
-        );
-        
-        slug_to_id.insert("author".to_string(), NodeId(0));
-        id_to_slug.insert(NodeId(0), "author".to_string());
-    }
-    
-    reg.set_node_importance(NodeId(0), 5); // 最高重要度
-    reg.set_node_inbound_count(NodeId(0), 0);
-    
-    // home_display=trueの記事のみをノードとして追加
+
+    // home_display=trueの記事のみをノードとして追加（作者記事も含む）
     let home_articles: Vec<_> = articles_data.articles.iter()
         .filter(|article| article.metadata.home_display)
         .collect();
-    
+
     // デバッグ情報をコンソールに出力
     #[cfg(target_arch = "wasm32")]
     {
@@ -154,58 +74,76 @@ fn create_node_registry_from_articles(articles_data: &ArticlesData, container_bo
             web_sys::console::log_1(&format!("Home article: {} ({})", article.title, article.slug).into());
         }
     }
-    
-    // home_articlesが空の場合は作者ノードのみ返す
+
+    // home_articlesが空の場合はフォールバック
     if home_articles.is_empty() {
         #[cfg(target_arch = "wasm32")]
-        web_sys::console::warn_1(&"No home articles found!".into());
+        web_sys::console::warn_1(&"No home articles found! Creating fallback author node".into());
+        
+        reg.add_node(
+            NodeId(next_id),
+            Position { x: center_x, y: center_y },
+            40,
+            NodeContent::Text("Author".to_string()),
+        );
+        slug_to_id.insert("author".to_string(), NodeId(next_id));
+        id_to_slug.insert(NodeId(next_id), "author".to_string());
         return (reg, id_to_slug);
     }
-    
-    // 円形にノードを配置するための計算（コンテナサイズに基づく）
-    let radius = (container_bound.width.min(container_bound.height) * 0.3).max(150.0); // コンテナサイズの30%、最小150px
+
+    // 作者記事を特定（最初に見つかったもの）
+    let _author_article_index = home_articles.iter()
+        .position(|article| article.metadata.author_image.is_some());
+
+    // 円形配置の計算
+    let radius = (container_bound.width.min(container_bound.height) * 0.3).max(150.0);
     let angle_step = 2.0 * std::f32::consts::PI / home_articles.len() as f32;
-    
+
     for (index, article) in home_articles.iter().enumerate() {
-        let angle = index as f32 * angle_step;
-        let x = center_x + radius * angle.cos();
-        let y = center_y + radius * angle.sin();
-        
         let node_id = NodeId(next_id);
-        reg.add_node(
-            node_id,
-            Position { x, y },
-            30, // ベースサイズ
-            NodeContent::Text(article.title.clone()),
-        );
         
+        // 記事の内容に基づいてNodeContentを決定
+        let content = determine_node_content(article);
+        
+        // 作者記事の場合は中央に配置し、大きめのサイズにする
+        let (position, base_radius) = if article.metadata.author_image.is_some() {
+            #[cfg(target_arch = "wasm32")]
+            web_sys::console::log_1(&format!("Placing author article '{}' at center", article.title).into());
+            (Position { x: center_x, y: center_y }, 60)
+        } else {
+            let angle = index as f32 * angle_step;
+            let x = center_x + radius * angle.cos();
+            let y = center_y + radius * angle.sin();
+            (Position { x, y }, 30)
+        };
+
+        reg.add_node(node_id, position, base_radius, content);
+
         // 重要度とリンク数を設定
         reg.set_node_importance(node_id, article.metadata.importance.unwrap_or(3));
         reg.set_node_inbound_count(node_id, article.inbound_count);
-        
+
         slug_to_id.insert(article.slug.clone(), node_id);
         id_to_slug.insert(node_id, article.slug.clone());
         next_id += 1;
     }
-    
-    // 作者ノードから全記事への接続を追加
-    for (_, &article_id) in &slug_to_id {
-        if article_id.0 != 0 { // 作者ノード以外
-            reg.add_edge(NodeId(0), article_id);
-        }
-    }
-    
-    // 記事間のリンクを追加
+
+    // 記事間のリンクを追加（作者記事も含む）
     for article in &home_articles {
         if let Some(&from_id) = slug_to_id.get(&article.slug) {
             for link in &article.outbound_links {
                 if let Some(&to_id) = slug_to_id.get(&link.target_slug) {
+                    #[cfg(target_arch = "wasm32")]
+                    web_sys::console::log_1(&format!(
+                        "Adding edge: {} -> {} (IDs: {} -> {})",
+                        article.slug, link.target_slug, from_id.0, to_id.0
+                    ).into());
                     reg.add_edge(from_id, to_id);
                 }
             }
         }
     }
-    
+
     (reg, id_to_slug)
 }
 
@@ -224,7 +162,7 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
 
     // データローダーを使用して記事データを取得
     let (articles_data, loading, error) = use_articles_data();
-        
+
     // 記事データが読み込まれたらノードレジストリと物理世界を一度だけ初期化
     let node_registry = use_state(|| Rc::new(RefCell::new(NodeRegistry::new())));
     let node_slug_mapping = use_state(|| HashMap::<NodeId, String>::new());
@@ -245,12 +183,12 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
     if let Some(data) = articles_data.as_ref() {
         if !*initialized {
             web_sys::console::log_1(&format!("Initializing with container_bound: {:?}", props.container_bound).into());
-            
+
             let (new_registry, slug_mapping) = create_node_registry_from_articles(data, &props.container_bound);
             let registry_rc = Rc::new(RefCell::new(new_registry));
             node_registry.set(Rc::clone(&registry_rc));
             node_slug_mapping.set(slug_mapping);
-            
+
             let new_physics_world = PhysicsWorld::new(
                 registry_rc,
                 &viewport,
@@ -307,13 +245,13 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
                     let dx = e.client_x() - start_x;
                     let dy = e.client_y() - start_y;
                     let distance = ((dx * dx + dy * dy) as f32).sqrt();
-                    
+
                     // 5px以上移動したらドラッグ開始
                     if distance > 5.0 && !*is_dragging {
                         is_dragging.set(true);
                         physics_world.borrow_mut().set_node_kinematic(id);
                     }
-                    
+
                     // ドラッグ中の場合のみノード位置を更新
                     if *is_dragging {
                         let mut world = physics_world.borrow_mut();
@@ -335,20 +273,20 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
         let node_slug_mapping = node_slug_mapping.clone();
         Callback::from(move |node_id: NodeId| {
             if let Some(slug) = node_slug_mapping.get(&node_id) {
-                // 作者ノードの場合はホームに留まる
+                // フォールバック作者ノードの場合はホームに留まる
                 if slug == "author" {
-                    web_sys::console::log_1(&"Author node clicked - staying on home page".into());
+                    web_sys::console::log_1(&"Fallback author node clicked - staying on home page".into());
                     return;
                 }
-                
-                // 記事ページに遷移
+
+                // 記事ページに遷移（作者記事も含む）
                 web_sys::console::log_1(&format!("Navigating to article: {}", slug).into());
                 let route = Route::ArticleShow { slug: slug.clone() };
                 navigator.push(&route);
             }
         })
     };
-    
+
     let on_mouse_down = {
         let dragged_node_id = dragged_node_id.clone();
         let drag_start_pos = drag_start_pos.clone();
@@ -377,7 +315,7 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
                     on_node_click.emit(id);
                 }
             }
-            
+
             // 状態をリセット
             dragged_node_id.set(None);
             drag_start_pos.set(None);
@@ -595,7 +533,7 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
                         let importance = registry.get_node_importance(*id);
                         let inbound_count = registry.get_node_inbound_count(*id);
                         drop(registry);
-                        
+
                         let on_mouse_down = {
                             let on_mouse_down = on_mouse_down.clone();
                             let id = *id;
@@ -604,7 +542,7 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
                                 on_mouse_down.emit((id, e));
                             })
                         };
-                        
+
                         html!{
                             <NodeComponent
                                 key={id.0}
@@ -639,7 +577,7 @@ pub struct NodeProps {
 fn node_component(props: &NodeProps) -> Html {
     // 重要度とリンク数に基づいて動的にサイズを計算
     let dynamic_radius = calculate_dynamic_radius(props.radius, props.importance, props.inbound_count);
-    
+
     html! {
         <div
             key={props.id.0.to_string()}
@@ -677,12 +615,12 @@ fn node_component(props: &NodeProps) -> Html {
 // 重要度とリンク数に基づいて動的サイズを計算する関数
 fn calculate_dynamic_radius(base_radius: i32, importance: Option<u8>, inbound_count: usize) -> i32 {
     let mut size = base_radius;
-    
+
     // 重要度に基づくサイズ調整 (1-5スケール)
     if let Some(imp) = importance {
         let importance_bonus = match imp {
             1 => -5,  // 小さく
-            2 => -2,  
+            2 => -2,
             3 => 0,   // ベースサイズ
             4 => 5,   // 大きく
             5 => 10,  // 最大
@@ -690,11 +628,11 @@ fn calculate_dynamic_radius(base_radius: i32, importance: Option<u8>, inbound_co
         };
         size += importance_bonus;
     }
-    
+
     // インバウンドリンク数に基づくサイズ調整
     let popularity_bonus = (inbound_count as f32).sqrt() as i32 * 3;
     size += popularity_bonus;
-    
+
     // 最小・最大サイズの制限
     size.clamp(15, 60)
 }

@@ -1,7 +1,7 @@
 ---
 title: "Khimoo"
 author_image: "https://avatars.githubusercontent.com/u/1?v=4"
-home_display: false
+home_display: true
 importance: 5
 category: "author"
 tags: ["about", "profile", "author"]
@@ -30,3 +30,5 @@ I'm a developer who enjoys building interactive web applications and exploring t
 Feel free to explore the articles and projects in this interactive mindmap portfolio. Each node represents a different aspect of my work and interests.
 
 The articles are interconnected, showing relationships between different topics and technologies I work with.
+
+[[async-patterns]]

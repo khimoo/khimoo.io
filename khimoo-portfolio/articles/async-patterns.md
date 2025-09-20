@@ -1,6 +1,6 @@
 ---
 title: "非同期パターン集"
-home_display: false
+home_display: true
 category: "programming"
 importance: 2
 tags: ["async", "patterns", "rust"]

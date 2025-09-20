@@ -11,7 +11,6 @@ pub struct ForceSettings {
     // Author node specific settings
     pub author_attraction_strength: f32,
     pub author_attraction_damping: f32,
-    pub author_fixed_position: bool,
     // Direct link specific settings
     pub direct_link_strength: f32,
     pub direct_link_damping: f32,
@@ -37,7 +36,6 @@ impl Default for ForceSettings {
             // Author node defaults
             author_attraction_strength: 2000.0,
             author_attraction_damping: 8.0,
-            author_fixed_position: true,
             // Direct link defaults
             direct_link_strength: 8000.0,
             direct_link_damping: 300.0,
@@ -120,7 +118,7 @@ impl NodeContent {
                     {text}
                 </a>
             },
-            NodeContent::Author { name, image_url, bio } => html! {
+            NodeContent::Author { name: _, image_url, bio: _ } => html! {
                     <img
                         src={image_url.clone()}
                         style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;"

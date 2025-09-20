@@ -42,11 +42,7 @@
           shellHook = ''
             echo "🦀 Rust WebAssembly development environment"
             echo "📦 Available commands:"
-            echo "  just dev      - Start development server with file watching"
-            echo "  just build    - Build for production"
-            echo "  just process  - Process articles and generate data"
-            echo "  just validate - Validate links and content"
-            echo "  just clean    - Clean generated files"
+            echo "  justファイル見て"
           '';
         };
 
