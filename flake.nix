@@ -42,7 +42,7 @@
           shellHook = ''
             echo "🦀 Rust WebAssembly development environment"
             echo "📦 Available commands:"
-            echo "  justファイル見て"
+            just --list
           '';
         };
 
