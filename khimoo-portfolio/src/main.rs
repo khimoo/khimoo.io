@@ -3,6 +3,7 @@ use yew_router::prelude::*;
 
 use khimoo_portfolio::home::app::Home;
 use khimoo_portfolio::home::article::{ArticleIndex, ArticleView};
+use khimoo_portfolio::home::header::Header;
 
 #[derive(Clone, Routable, PartialEq)]
 enum Route {
@@ -35,7 +36,10 @@ fn root() -> Html {
 
     html! {
         <BrowserRouter basename={basename}>
-            <Switch<Route> render={switch} />
+            <>
+                <Header />
+                <Switch<Route> render={switch} />
+            </>
         </BrowserRouter>
     }
 }
