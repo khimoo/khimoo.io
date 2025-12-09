@@ -434,75 +434,87 @@ pub fn node_graph_container(props: &NodeGraphContainerProps) -> Html {
             >
                 <h1>{"Interactive Mindmap Portfolio"}</h1>
                 <p>{ format!("記事数: {}", node_registry.borrow().positions.len()) }</p>
-                <p>{ format!("{:?}", props.container_bound)}</p>
-                {{
-                    // 力の設定UI
-                    html! {
-                        <div style="position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.8); color: white; padding: 20px; border-radius: 10px; z-index: 100;">
-                            <h3 style="margin: 0 0 15px 0;">{"力の設定"}</h3>
-                            <div style="margin-bottom: 15px;">
-                                <label>{"反発力の強さ: "}{force_settings.repulsion_strength as i32}</label><br/>
-                                <input
-                                    type="range"
-                                    min="0"
-                                    max="200000"
-                                    step="1000"
-                                    value={force_settings.repulsion_strength.to_string()}
-                                    onchange={on_repulsion_strength_change.clone()}
-                                    style="width: 200px;"
-                                />
-                            </div>
-                            <div style="margin-bottom: 15px;">
-                                <label>{"反発力の最小距離: "}{force_settings.repulsion_min_distance as i32}</label><br/>
-                                <input
-                                    type="range"
-                                    min="0"
-                                    max="1000"
-                                    step="5"
-                                    value={force_settings.repulsion_min_distance.to_string()}
-                                    onchange={on_repulsion_distance_change.clone()}
-                                    style="width: 200px;"
-                                />
-                            </div>
-                            <div style="margin-bottom: 15px;">
-                                <label>{"中心力の強さ: "}{force_settings.center_strength as i32}</label><br/>
-                                <input
-                                    type="range"
-                                    min="0"
-                                    max="10000"
-                                    step="1"
-                                    value={force_settings.center_strength.to_string()}
-                                    onchange={on_center_strength_change.clone()}
-                                    style="width: 200px;"
-                                />
-                            </div>
-                            <div style="margin-bottom: 15px;">
-                                <label>{"中心減衰: "}{force_settings.center_damping as i32}</label><br/>
-                                <input
-                                    type="range"
-                                    min="0"
-                                    max="50"
-                                    step="1"
-                                    value={force_settings.center_damping.to_string()}
-                                    onchange={on_center_damping_change.clone()}
-                                    style="width: 200px;"
-                                />
-                            </div>
-                            <div style="margin-bottom: 15px;">
-                                <label>{"リンク力の強さ: "}{force_settings.link_strength as i32}</label><br/>
-                                <input
-                                    type="range"
-                                    min="0"
-                                    max="50000"
-                                    step="100"
-                                    value={force_settings.link_strength.to_string()}
-                                    onchange={on_link_strength_change.clone()}
-                                    style="width: 200px;"
-                                />
-                            </div>
-                        </div>
+                // ContainerBound debug display: only present in debug builds
+                {
+                    if cfg!(debug_assertions) {
+                        html! { <p>{ format!("{:?}", props.container_bound) }</p> }
+                    } else {
+                        html! {}
                     }
-                }}
+                }
+
+                // 力の設定パネル（デバッグビルド時のみ表示）。trunk serve --release でコンパイルすると除外されます。
+                {
+                    if cfg!(debug_assertions) {
+                        html! {
+                            <div style="position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.8); color: white; padding: 20px; border-radius: 10px; z-index: 100;">
+                                <h3 style="margin: 0 0 15px 0;">{"力の設定"}</h3>
+                                <div style="margin-bottom: 15px;">
+                                    <label>{"反発力の強さ: "}{force_settings.repulsion_strength as i32}</label><br/>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="200000"
+                                        step="1000"
+                                        value={force_settings.repulsion_strength.to_string()}
+                                        onchange={on_repulsion_strength_change.clone()}
+                                        style="width: 200px;"
+                                    />
+                                </div>
+                                <div style="margin-bottom: 15px;">
+                                    <label>{"反発力の最小距離: "}{force_settings.repulsion_min_distance as i32}</label><br/>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="1000"
+                                        step="5"
+                                        value={force_settings.repulsion_min_distance.to_string()}
+                                        onchange={on_repulsion_distance_change.clone()}
+                                        style="width: 200px;"
+                                    />
+                                </div>
+                                <div style="margin-bottom: 15px;">
+                                    <label>{"中心力の強さ: "}{force_settings.center_strength as i32}</label><br/>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="10000"
+                                        step="1"
+                                        value={force_settings.center_strength.to_string()}
+                                        onchange={on_center_strength_change.clone()}
+                                        style="width: 200px;"
+                                    />
+                                </div>
+                                <div style="margin-bottom: 15px;">
+                                    <label>{"中心減衰: "}{force_settings.center_damping as i32}</label><br/>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="50"
+                                        step="1"
+                                        value={force_settings.center_damping.to_string()}
+                                        onchange={on_center_damping_change.clone()}
+                                        style="width: 200px;"
+                                    />
+                                </div>
+                                <div style="margin-bottom: 15px;">
+                                    <label>{"リンク力の強さ: "}{force_settings.link_strength as i32}</label><br/>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="50000"
+                                        step="100"
+                                        value={force_settings.link_strength.to_string()}
+                                        onchange={on_link_strength_change.clone()}
+                                        style="width: 200px;"
+                                    />
+                                </div>
+                            </div>
+                        }
+                    } else {
+                        html! {}
+                    }
+                }
                 {{
                     // 背景のエッジ描画
                     let reg = node_registry.borrow();
