@@ -1,15 +1,8 @@
 {
   "graph": {
-    "tokio-basics": {
-      "connections": [
-        {
-          "target": "rust-async",
-          "connection_type": "Bidirectional",
-          "bidirectional": true,
-          "link_count": 2
-        }
-      ],
-      "inbound_count": 2,
+    "broken-link-test": {
+      "connections": [],
+      "inbound_count": 0,
       "outbound_count": 2
     },
     "web-development": {
@@ -27,13 +20,13 @@
     "hello": {
       "connections": [
         {
-          "target": "web-development",
+          "target": "rust-async",
           "connection_type": "Bidirectional",
           "bidirectional": true,
           "link_count": 1
         },
         {
-          "target": "rust-async",
+          "target": "web-development",
           "connection_type": "Bidirectional",
           "bidirectional": true,
           "link_count": 1
@@ -41,6 +34,46 @@
       ],
       "inbound_count": 2,
       "outbound_count": 2
+    },
+    "test": {
+      "connections": [],
+      "inbound_count": 0,
+      "outbound_count": 0
+    },
+    "tokio-basics": {
+      "connections": [
+        {
+          "target": "rust-async",
+          "connection_type": "Bidirectional",
+          "bidirectional": true,
+          "link_count": 2
+        }
+      ],
+      "inbound_count": 2,
+      "outbound_count": 2
+    },
+    "async-patterns": {
+      "connections": [
+        {
+          "target": "rust-async",
+          "connection_type": "Bidirectional",
+          "bidirectional": true,
+          "link_count": 1
+        },
+        {
+          "target": "tokio-basics",
+          "connection_type": "DirectLink",
+          "bidirectional": false,
+          "link_count": 1
+        }
+      ],
+      "inbound_count": 2,
+      "outbound_count": 2
+    },
+    "readme": {
+      "connections": [],
+      "inbound_count": 0,
+      "outbound_count": 0
     },
     "about-khimoo": {
       "connections": [
@@ -77,42 +110,9 @@
       ],
       "inbound_count": 4,
       "outbound_count": 3
-    },
-    "readme": {
-      "connections": [],
-      "inbound_count": 0,
-      "outbound_count": 0
-    },
-    "async-patterns": {
-      "connections": [
-        {
-          "target": "rust-async",
-          "connection_type": "Bidirectional",
-          "bidirectional": true,
-          "link_count": 1
-        },
-        {
-          "target": "tokio-basics",
-          "connection_type": "DirectLink",
-          "bidirectional": false,
-          "link_count": 1
-        }
-      ],
-      "inbound_count": 2,
-      "outbound_count": 2
-    },
-    "broken-link-test": {
-      "connections": [],
-      "inbound_count": 0,
-      "outbound_count": 2
-    },
-    "test": {
-      "connections": [],
-      "inbound_count": 0,
-      "outbound_count": 0
     }
   },
-  "generated_at": "2025-12-09T15:59:53.843170504+00:00",
+  "generated_at": "2025-12-09T16:17:34.701970218+00:00",
   "total_connections": 10,
   "bidirectional_pairs": 4,
   "direct_links": 2
